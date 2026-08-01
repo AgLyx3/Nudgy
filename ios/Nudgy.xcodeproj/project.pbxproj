@@ -69,6 +69,9 @@
 				1A0000000000000000000006 /* Nudgy */,
 			);
 			name = Nudgy;
+			packageProductDependencies = (
+				1A0000000000000000000011 /* LiteRTLM */,
+			);
 			productName = Nudgy;
 			productReference = 1A0000000000000000000005 /* Nudgy.app */;
 			productType = "com.apple.product-type.application";
@@ -97,6 +100,9 @@
 			);
 			mainGroup = 1A0000000000000000000002;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				1A0000000000000000000010 /* XCLocalSwiftPackageReference "ThirdParty/LiteRT-LM" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 1A0000000000000000000003 /* Products */;
 			projectDirPath = "";
@@ -269,6 +275,20 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		1A0000000000000000000010 /* XCLocalSwiftPackageReference "ThirdParty/LiteRT-LM" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "ThirdParty/LiteRT-LM";
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		1A0000000000000000000011 /* LiteRTLM */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = LiteRTLM;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 1A0000000000000000000001 /* Project object */;
 }
