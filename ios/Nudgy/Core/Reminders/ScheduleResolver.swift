@@ -14,21 +14,18 @@ import Foundation
 ///
 /// ## Convenience suggestions
 ///
-/// Nudgy still wants to be useful, so each dose also gets a *paired* slot carrying a default clock
-/// time with `.convenienceSuggestion(basis:)` provenance. The pair is the point: the UI can render
+/// Nudgy still wants to be useful, so each slot also carries an optional `TimeSuggestion` — a
+/// default clock time Nudgy offers, held in a separate field from `timeOfDay`. That separation is
+/// the point: the UI can render
 ///
 /// > Dose 1 of 2 — your record does not name a time. Nudgy suggests 8:00 AM.
 ///
 /// which is distinguishable from both "no time known" and "the chart says 8:00 AM". A silent
-/// default would collapse all three into one.
+/// default would collapse all three into one, and merging the suggestion into `timeOfDay` would
+/// quietly promote Nudgy's idea into a chart fact.
 ///
-/// Slot identity encodes the pairing:
-/// - record slot:     `<idPrefix>#slot<N>`
-/// - paired suggestion: `<idPrefix>#slot<N>#suggested`
+/// One slot per dose, id `<idPrefix>#slot<N>`.
 struct ScheduleResolver {
-
-    /// Suffix marking the convenience-suggestion half of a slot pair.
-    static let suggestionIDSuffix = "#suggested"
 
     struct Options {
         /// Default clock times Nudgy offers when the record names none. Pure UX defaults with no
@@ -155,16 +152,11 @@ struct ScheduleResolver {
                 provenance = .needsReview(.timeOfDayNotSpecified)
             }
 
-            slots.append(
-                ProposedSlot(
-                    id: "\(idPrefix)#slot\(index)",
-                    timeOfDay: nil,
-                    provenance: provenance,
-                    label: label
-                )
-            )
-
-            // --- Paired convenience suggestion. ---
+            // --- Nudgy's own offered clock time, attached to the same slot. ---
+            //
+            // One slot per dose, carrying an optional suggestion. The record fact and Nudgy's idea
+            // stay distinguishable — `timeOfDay` versus `suggestion` — without duplicating the row
+            // or risking a dose being scheduled twice.
             let suggested: DateComponents?
             let basis: String
             if let meaning {
@@ -182,16 +174,15 @@ struct ScheduleResolver {
                 basis = ""
             }
 
-            if let suggested {
-                slots.append(
-                    ProposedSlot(
-                        id: "\(idPrefix)#slot\(index)\(Self.suggestionIDSuffix)",
-                        timeOfDay: suggested,
-                        provenance: .convenienceSuggestion(basis: basis),
-                        label: label
-                    )
+            slots.append(
+                ProposedSlot(
+                    id: "\(idPrefix)#slot\(index)",
+                    timeOfDay: nil,
+                    provenance: provenance,
+                    label: label,
+                    suggestion: suggested.map { TimeSuggestion(clockTime: $0, basis: basis) }
                 )
-            }
+            )
         }
         return slots
     }
@@ -218,27 +209,6 @@ struct ScheduleResolver {
         }
     }
 
-    // MARK: - Slot pairing helpers
-
-    static func isConvenienceSuggestion(_ slot: ProposedSlot) -> Bool {
-        if case .convenienceSuggestion = slot.provenance { return true }
-        return false
-    }
-
-    /// The record slot a suggestion belongs to, or nil when `slot` is not a suggestion.
-    static func pairedRecordSlotID(for slot: ProposedSlot) -> String? {
-        guard slot.id.hasSuffix(suggestionIDSuffix) else { return nil }
-        return String(slot.id.dropLast(suggestionIDSuffix.count))
-    }
-
-    /// The slots a UI should show as "what the record actually says".
-    static func recordSlots(in slots: [ProposedSlot]) -> [ProposedSlot] {
-        slots.filter { !isConvenienceSuggestion($0) }
-    }
-
-    static func suggestionSlots(in slots: [ProposedSlot]) -> [ProposedSlot] {
-        slots.filter { isConvenienceSuggestion($0) }
-    }
 }
 
 extension String {

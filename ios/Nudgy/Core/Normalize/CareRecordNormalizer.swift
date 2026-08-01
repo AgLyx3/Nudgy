@@ -122,9 +122,9 @@ struct CareRecordNormalizer {
             .trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty else { return nil }
 
         // The record's own attribution wins over the connector's name.
-        let sourceLabel = request.performer?.display?.trimmingCharacters(in: .whitespaces).nilIfEmpty
+        let sourceLabel = (request.performer?.display?.trimmingCharacters(in: .whitespaces).nilIfEmpty
             ?? request.requester?.display?.trimmingCharacters(in: .whitespaces).nilIfEmpty
-            ?? descriptor.displayName
+            ?? descriptor.displayName).strippingGeneratedNameDigits
 
         let context = CitationContext(
             sourceLabel: sourceLabel,
@@ -172,9 +172,9 @@ struct CareRecordNormalizer {
         guard let name = statement.medicationDisplay?
             .trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty else { return nil }
 
-        let sourceLabel = statement.informationSource?.display?
+        let sourceLabel = (statement.informationSource?.display?
             .trimmingCharacters(in: .whitespaces).nilIfEmpty
-            ?? descriptor.displayName
+            ?? descriptor.displayName).strippingGeneratedNameDigits
 
         let context = CitationContext(
             sourceLabel: sourceLabel,
@@ -261,5 +261,26 @@ struct CareRecordNormalizer {
             result.append(value)
         }
         return result
+    }
+}
+
+extension String {
+    /// Strips the sequence numbers Synthea appends to generated names ("Kyoko885" → "Kyoko").
+    ///
+    /// Applied **only** to person and organization display labels, never to medication names or
+    /// any `verbatimText` — "Metformin hydrochloride 500 MG" and "Hydrochlorothiazide 25 MG" must
+    /// keep their numbers. Those digits are an artifact of the synthetic data generator rather
+    /// than anything a real record would contain, and `FHIRHumanName.formatted` already removes
+    /// them from patient names, so this keeps attribution consistent with the rest of the UI.
+    var strippingGeneratedNameDigits: String {
+        let cleaned = replacingOccurrences(
+            of: "(?<=[A-Za-z])[0-9]+\\b",
+            with: "",
+            options: .regularExpression
+        )
+        let collapsed = cleaned.replacingOccurrences(
+            of: " {2,}", with: " ", options: .regularExpression
+        ).trimmingCharacters(in: .whitespaces)
+        return collapsed.isEmpty ? self : collapsed
     }
 }

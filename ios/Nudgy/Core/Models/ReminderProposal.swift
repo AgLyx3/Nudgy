@@ -16,6 +16,27 @@ struct SourceFact: Codable, Hashable, Identifiable {
     }
 }
 
+/// A clock time Nudgy is offering, which the record did not name.
+///
+/// Held separately from `ProposedSlot.timeOfDay` rather than merged into it, so a suggestion can
+/// never be mistaken for — or silently promoted into — a time the chart actually specified. The
+/// UI offers it; only the user accepting it moves it into `timeOfDay`.
+struct TimeSuggestion: Codable, Hashable {
+    let clockTime: DateComponents
+    /// Plain-language reason, always making clear this is a scheduling idea and not health guidance.
+    let basis: String
+
+    var formatted: String {
+        guard let hour = clockTime.hour, let minute = clockTime.minute,
+              let date = Calendar.current.date(
+                from: DateComponents(year: 2000, month: 1, day: 1, hour: hour, minute: minute)
+              ) else { return "—" }
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
+    }
+}
+
 /// One proposed notification time within a day.
 struct ProposedSlot: Codable, Hashable, Identifiable {
     var id: String
@@ -24,12 +45,21 @@ struct ProposedSlot: Codable, Hashable, Identifiable {
     var provenance: Provenance
     /// e.g. "Morning", "Evening", "Dose 1 of 2"
     var label: String
+    /// Nudgy's offered clock time, when the record named none. Never auto-applied.
+    var suggestion: TimeSuggestion?
 
-    init(id: String = UUID().uuidString, timeOfDay: DateComponents?, provenance: Provenance, label: String) {
+    init(
+        id: String = UUID().uuidString,
+        timeOfDay: DateComponents?,
+        provenance: Provenance,
+        label: String,
+        suggestion: TimeSuggestion? = nil
+    ) {
         self.id = id
         self.timeOfDay = timeOfDay
         self.provenance = provenance
         self.label = label
+        self.suggestion = suggestion
     }
 
     var formattedTime: String {

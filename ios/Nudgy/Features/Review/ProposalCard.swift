@@ -12,8 +12,17 @@ struct ProposalCard: View {
     var onSkip: (ReminderProposal) -> Void
 
     @State private var showSources = false
+    @State private var showNotes = false
     @State private var workingSlots: [ProposedSlot]
     @State private var didAdjustTimes = false
+
+    private var concernFlags: [ProposalFlag] {
+        proposal.flags.filter { $0.severity == .possibleConcern }
+    }
+
+    private var infoFlags: [ProposalFlag] {
+        proposal.flags.filter { $0.severity == .info }
+    }
 
     init(
         proposal: ReminderProposal,
@@ -45,8 +54,15 @@ struct ProposalCard: View {
                 slotSection
             }
 
-            ForEach(proposal.flags) { flag in
+            // A possible concern is the reason this card needs a human, so it is always visible.
+            // Informational notes are real but secondary; shown inline they buried the medication
+            // name and the buttons under a wall of text, which is its own kind of unsafe.
+            ForEach(concernFlags) { flag in
                 FlagRow(flag: flag)
+            }
+
+            if !infoFlags.isEmpty {
+                notesDisclosure
             }
 
             sourceDisclosure
@@ -109,6 +125,22 @@ struct ProposalCard: View {
         .background(NudgyTheme.Palette.surfaceSunken, in: RoundedRectangle(cornerRadius: 12))
     }
 
+    /// True when every unset slot is unset for the same reason. The caveat is then stated once for
+    /// the section instead of repeated under each dose, which is what made this card unreadable.
+    private var sharedTimingCaveat: String? {
+        let unset = workingSlots.filter { $0.timeOfDay == nil }
+        guard !unset.isEmpty else { return nil }
+        let allNeedTime = unset.allSatisfy {
+            if case .needsReview(.timeOfDayNotSpecified) = $0.provenance { return true }
+            return false
+        }
+        guard allNeedTime else { return nil }
+        return unset.contains(where: { $0.suggestion != nil })
+            ? "Your record says how often, but not what time of day. The times below are mine, "
+              + "not medical guidance — change any of them."
+            : "Your record says how often, but not what time of day."
+    }
+
     private var slotSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Proposed times")
@@ -116,13 +148,53 @@ struct ProposalCard: View {
                 .kerning(0.5)
                 .foregroundStyle(NudgyTheme.Palette.inkTertiary)
 
+            if let caveat = sharedTimingCaveat {
+                Text(caveat)
+                    .font(NudgyTheme.Typeface.ui())
+                    .foregroundStyle(NudgyTheme.Palette.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.bottom, 2)
+            }
+
             ForEach($workingSlots) { $slot in
-                SlotRow(slot: $slot, onChange: { didAdjustTimes = true })
+                SlotRow(
+                    slot: $slot,
+                    suppressSupportingText: sharedTimingCaveat != nil,
+                    onChange: { didAdjustTimes = true }
+                )
             }
         }
     }
 
     // MARK: - Sources
+
+    private var notesDisclosure: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) { showNotes.toggle() }
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: showNotes ? "chevron.down" : "chevron.right")
+                        .font(.system(size: 10, weight: .semibold))
+                    Text(showNotes
+                         ? "Hide notes"
+                         : "\(infoFlags.count) note\(infoFlags.count == 1 ? "" : "s") about timing")
+                }
+                .font(NudgyTheme.Typeface.label())
+                .foregroundStyle(NudgyTheme.Palette.inkSecondary)
+            }
+            .buttonStyle(.plain)
+
+            if showNotes {
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(infoFlags) { flag in
+                        FlagRow(flag: flag)
+                    }
+                }
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+    }
 
     private var sourceDisclosure: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -159,6 +231,19 @@ struct ProposalCard: View {
     // MARK: - Actions
 
     private var actionRow: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            // A dead grey button with no explanation is its own usability failure. Say why.
+            if !canApprove {
+                Text("Set a time first — your record does not name one.")
+                    .font(NudgyTheme.Typeface.micro())
+                    .foregroundStyle(NudgyTheme.Palette.concern)
+            }
+            buttons
+        }
+        .padding(.top, 2)
+    }
+
+    private var buttons: some View {
         HStack(spacing: 10) {
             Button(approveTitle) {
                 var approved = proposal
@@ -195,6 +280,8 @@ struct ProposalCard: View {
 /// One proposed time. Renders very differently depending on where the time came from.
 private struct SlotRow: View {
     @Binding var slot: ProposedSlot
+    /// Set when the card already stated the reason once for the whole section.
+    var suppressSupportingText: Bool = false
     var onChange: () -> Void
 
     @State private var isPicking = false
@@ -217,33 +304,55 @@ private struct SlotRow: View {
                     .font(NudgyTheme.Typeface.ui())
                     .foregroundStyle(NudgyTheme.Palette.ink)
 
-                Text(supportingText)
-                    .font(NudgyTheme.Typeface.micro())
-                    .foregroundStyle(
-                        timeIsFromRecord
-                            ? NudgyTheme.Palette.trust
-                            : NudgyTheme.Palette.inkTertiary
-                    )
-                    .fixedSize(horizontal: false, vertical: true)
+                if let supporting = supportingText {
+                    Text(supporting)
+                        .font(NudgyTheme.Typeface.micro())
+                        .foregroundStyle(
+                            timeIsFromRecord
+                                ? NudgyTheme.Palette.trust
+                                : NudgyTheme.Palette.inkTertiary
+                        )
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
 
             Spacer(minLength: 0)
 
-            Button {
-                isPicking = true
-            } label: {
-                Text(slot.timeOfDay == nil ? "Set time" : slot.formattedTime)
-                    .font(NudgyTheme.Typeface.label())
-                    .foregroundStyle(
-                        slot.timeOfDay == nil
-                            ? NudgyTheme.Palette.concern
-                            : NudgyTheme.Palette.ink
-                    )
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 7)
-                    .background(NudgyTheme.Palette.surfaceSunken, in: Capsule())
+            HStack(spacing: 6) {
+                // Accepting Nudgy's offer is one tap, but it is always an explicit act. The
+                // suggestion never becomes the time on its own.
+                if slot.timeOfDay == nil, let suggestion = slot.suggestion {
+                    Button {
+                        slot.timeOfDay = suggestion.clockTime
+                        slot.provenance = .patternNoticed(basis: "you accepted Nudgy's suggestion")
+                        onChange()
+                    } label: {
+                        Text("Use \(suggestion.formatted)")
+                            .font(NudgyTheme.Typeface.label())
+                            .foregroundStyle(NudgyTheme.Palette.accent)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 7)
+                            .background(NudgyTheme.Palette.accentSoft, in: Capsule())
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                Button {
+                    isPicking = true
+                } label: {
+                    Text(slot.timeOfDay == nil ? "Set" : slot.formattedTime)
+                        .font(NudgyTheme.Typeface.label())
+                        .foregroundStyle(
+                            slot.timeOfDay == nil
+                                ? NudgyTheme.Palette.concern
+                                : NudgyTheme.Palette.ink
+                        )
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 7)
+                        .background(NudgyTheme.Palette.surfaceSunken, in: Capsule())
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
         }
         .padding(.vertical, 4)
         .sheet(isPresented: $isPicking) {
@@ -253,16 +362,22 @@ private struct SlotRow: View {
     }
 
     /// The sentence that keeps a Nudgy suggestion from being mistaken for a clinical instruction.
-    private var supportingText: String {
+    /// The line that keeps a Nudgy suggestion from being mistaken for a clinical instruction.
+    ///
+    /// Nil when it would add nothing — either the card already said it once for the whole section,
+    /// or the row's own controls already make the state obvious. Repeating the same caveat under
+    /// four identical doses buried the medication name and the buttons.
+    private var supportingText: String? {
         switch slot.provenance {
         case .fromYourRecord(let citation):
+            // Always worth showing: this is the chart's own wording and it differs per slot.
             return "Your record says: \(citation.verbatimText)"
         case .needsReview(let reason):
-            return reason.plainLanguage
+            return suppressSupportingText ? nil : reason.plainLanguage
         case .convenienceSuggestion(let basis):
-            return "My suggestion, not from your chart — \(basis)"
+            return suppressSupportingText ? nil : "My suggestion, not from your chart — \(basis)"
         case .patternNoticed(let basis):
-            return "Pattern I noticed — \(basis)"
+            return "Set by you — \(basis)"
         }
     }
 }

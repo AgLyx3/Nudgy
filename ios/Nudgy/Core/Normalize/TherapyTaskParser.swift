@@ -77,8 +77,8 @@ struct TherapyTaskParser {
         dataOrigin: DataOrigin
     ) -> [TherapyTask] {
         let planID = plan.id ?? "unknown"
-        let sourceLabel = plan.author?.display?.trimmingCharacters(in: .whitespaces).nilIfEmpty
-            ?? fallbackSourceLabel
+        let sourceLabel = (plan.author?.display?.trimmingCharacters(in: .whitespaces).nilIfEmpty
+            ?? fallbackSourceLabel).strippingGeneratedNameDigits
         let recordedDate = plan.period?.start
         let context = CitationContext(
             sourceLabel: sourceLabel,
