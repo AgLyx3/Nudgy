@@ -1,0 +1,33 @@
+# macOS
+.DS_Store
+
+# Xcode
+build/
+DerivedData/
+*.xcuserstate
+*.xcworkspace/xcuserdata/
+xcuserdata/
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Packages/
+Package.resolved
+
+# On-device model weights.
+# Gemma 4 E2B in .litertlm form is ~2.58 GB. It is downloaded or side-loaded at runtime by
+# GemmaModelManager and must never enter the repository.
+*.litertlm
+*.task
+*.gguf
+Models/weights/
+
+# Never commit real health data. The only patient data in this repo is synthetic
+# (MITRE Synthea) or hand-authored demo data, both under ios/Nudgy/Resources/SampleData/.
+*.phi.json
+/PrivateData/

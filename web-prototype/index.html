@@ -1,0 +1,110 @@
+also <!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Nudgy Private Health Conversation</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="phone-shell" aria-label="Nudgy mobile health assistant prototype">
+      <section class="app-screen">
+        <header class="topbar">
+          <button class="icon-button" type="button" aria-label="Open records">
+            <span aria-hidden="true" class="icon-stack"></span>
+          </button>
+          <div>
+            <p class="eyebrow">Private conversation</p>
+            <h1>Nudgy</h1>
+          </div>
+          <button class="privacy-pill" type="button" aria-label="Privacy controls">
+            <span aria-hidden="true" class="lock-dot"></span>
+            On device
+          </button>
+        </header>
+
+        <section class="status-strip" aria-label="Session status">
+          <div>
+            <span class="status-label">Microphone</span>
+            <strong id="micStatus">Off</strong>
+          </div>
+          <div>
+            <span class="status-label">Storage</span>
+            <strong>Local only</strong>
+          </div>
+          <div>
+            <span class="status-label">Mode</span>
+            <strong>Careful</strong>
+          </div>
+        </section>
+
+        <section class="timeline" id="timeline" aria-live="polite">
+          <article class="moment assistant">
+            <time>Today, 8:42 AM</time>
+            <p>You mentioned feeling lightheaded after breakfast. I am keeping this conversation on your device.</p>
+          </article>
+
+          <article class="listen-card">
+            <div class="listen-copy">
+              <span class="mini-label">I heard</span>
+              <strong>Lightheadedness after breakfast</strong>
+              <span>No chest pain or shortness of breath mentioned yet.</span>
+            </div>
+            <button class="small-icon" type="button" aria-label="Edit summary">
+              <span aria-hidden="true">Edit</span>
+            </button>
+          </article>
+
+          <article class="moment assistant compact">
+            <p>Should we check a few safety questions before saving this as a symptom note?</p>
+            <div class="reply-row">
+              <button type="button" class="reply-chip">Ask me</button>
+              <button type="button" class="reply-chip muted">I'll type</button>
+            </div>
+          </article>
+
+          <article class="health-note">
+            <div>
+              <span class="mini-label">Today</span>
+              <strong>Medication at 9:00 PM</strong>
+            </div>
+            <button type="button" class="mark-button">Done</button>
+          </article>
+        </section>
+
+        <footer class="composer" aria-label="Message composer">
+          <div class="prompt-row">
+            <button class="quick-action" type="button" data-prompt="I want to log a symptom">
+              Log symptom
+            </button>
+            <button class="quick-action" type="button" data-prompt="Can we review my medication timing?">
+              Medication
+            </button>
+            <button class="quick-action camera-action" id="photoMedButton" type="button">
+              Add from photo
+            </button>
+            <button class="quick-action" type="button" data-prompt="Help me prepare for my appointment">
+              Appointment
+            </button>
+          </div>
+
+          <div class="input-row">
+            <button class="mic-button" id="micButton" type="button" aria-label="Hold to talk">
+              <span class="mic-stem" aria-hidden="true"></span>
+            </button>
+            <form id="messageForm" class="text-form">
+              <label class="sr-only" for="messageInput">Ask privately</label>
+              <input id="messageInput" autocomplete="off" placeholder="Ask privately..." type="text">
+              <button class="send-button" type="submit" aria-label="Send message">
+                <span aria-hidden="true">Send</span>
+              </button>
+            </form>
+            <input class="sr-only" id="medPhotoInput" type="file" accept="image/*" capture="environment">
+          </div>
+        </footer>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
