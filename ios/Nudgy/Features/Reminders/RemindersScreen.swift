@@ -8,6 +8,23 @@ import SwiftUI
 struct RemindersScreen: View {
     @EnvironmentObject private var session: NudgySession
     @State private var showStatus = false
+    @State private var filter: Filter = .scheduled
+
+    /// Two genuinely different things share this tab: a timetable, and a list of things you have
+    /// on hand for when you need them. Mixing them made the timetable unreadable.
+    enum Filter: String, CaseIterable, Identifiable {
+        case scheduled
+        case onDemand
+
+        var id: String { rawValue }
+
+        var title: String {
+            switch self {
+            case .scheduled: return "On a schedule"
+            case .onDemand: return "When needed"
+            }
+        }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -16,8 +33,11 @@ struct RemindersScreen: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: NudgyTheme.Metric.lg) {
                     title
-                    if !session.openProposals.isEmpty { reviewBanner }
-                    feed
+                    filterPicker
+                    if filter == .scheduled, !session.proposalsNeedingReview.isEmpty {
+                        reviewBanner
+                    }
+                    if filter == .scheduled { feed } else { onDemandList }
                     endOfFeed
                 }
                 .padding(.horizontal, NudgyTheme.Metric.containerMargin)
@@ -43,6 +63,37 @@ struct RemindersScreen: View {
         }
     }
 
+    private var filterPicker: some View {
+        Picker("Show", selection: $filter) {
+            ForEach(Filter.allCases) { option in
+                Text(option.title).tag(option)
+            }
+        }
+        .pickerStyle(.segmented)
+    }
+
+    /// Medications the record says are taken only when needed. Deliberately timeless: giving one a
+    /// daily slot would turn an as-needed prescription into a standing one.
+    private var onDemandList: some View {
+        VStack(alignment: .leading, spacing: NudgyTheme.Metric.md) {
+            if session.onDemandProposals.isEmpty {
+                Text("Nothing in your records is listed as taken only when needed.")
+                    .font(NudgyTheme.Typeface.bodyMedium())
+                    .foregroundStyle(NudgyTheme.Palette.onSurfaceMuted)
+            } else {
+                Text("Your records list these as taken only when you need them, so I don't set "
+                     + "times for them.")
+                    .font(NudgyTheme.Typeface.bodyMedium())
+                    .foregroundStyle(NudgyTheme.Palette.onSurfaceVariant)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                ForEach(session.onDemandProposals) { proposal in
+                    OnDemandRow(proposal: proposal)
+                }
+            }
+        }
+    }
+
     /// A quiet count rather than a wall of cards to clear. Review should feel like a short detour,
     /// not a gate in front of the app.
     private var reviewBanner: some View {
@@ -52,10 +103,10 @@ struct RemindersScreen: View {
                 .foregroundStyle(NudgyTheme.Palette.tertiary)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("\(session.activeReminders.count) set up · \(session.openProposals.count) to look at")
+                Text("\(session.activeReminders.count) set up · \(session.proposalsNeedingReview.count) to look at")
                     .font(NudgyTheme.Typeface.bodyMedium().weight(.medium))
                     .foregroundStyle(NudgyTheme.Palette.onSurface)
-                Text("I found these in your records. Nothing gets scheduled until you say so.")
+                Text("These are already running. A couple need your eye before I set them.")
                     .font(NudgyTheme.Typeface.labelMedium())
                     .foregroundStyle(NudgyTheme.Palette.onSurfaceVariant)
                     .fixedSize(horizontal: false, vertical: true)
@@ -76,13 +127,15 @@ struct RemindersScreen: View {
                 TimelineRow(kind: reminder.kind) {
                     ActiveReminderCard(
                         reminder: reminder,
-                        onChangeTime: { session.requestTimeChange(for: reminder) },
+                        onCommitTimes: { times in
+                            Task { await session.updateTimes(for: reminder, to: times) }
+                        },
                         onStop: { Task { await session.stopReminding(reminder) } }
                     )
                 }
             }
 
-            ForEach(session.openProposals) { proposal in
+            ForEach(session.proposalsNeedingReview) { proposal in
                 TimelineRow(kind: proposal.kind) {
                     ProposalCard(
                         proposal: proposal,
@@ -112,7 +165,7 @@ struct RemindersScreen: View {
             Image(systemName: "calendar")
                 .font(.system(size: 22))
                 .foregroundStyle(NudgyTheme.Palette.outlineVariant)
-            Text(session.activeReminders.isEmpty && session.openProposals.isEmpty
+            Text(session.activeReminders.isEmpty && session.proposalsNeedingReview.isEmpty
                  ? "Nothing for today. I'll let you know if that changes."
                  : "That's everything for today.")
                 .font(NudgyTheme.Typeface.bodyMedium())
@@ -168,10 +221,28 @@ private struct TimelineRow<Content: View>: View {
 /// hatches the notification also offers.
 private struct ActiveReminderCard: View {
     let reminder: ApprovedReminder
-    var onChangeTime: () -> Void
+    var onCommitTimes: ([DateComponents]) -> Void
     var onStop: () -> Void
 
     @State private var showSources = false
+    @State private var isPickingTimes = false
+    @State private var editableSlots: [ProposedSlot] = []
+
+    /// The sheet edits `ProposedSlot`s, so a running reminder's times are lifted into that shape
+    /// and written back on dismiss. Keeps one time editor in the app rather than two.
+    private func beginEditing() {
+        editableSlots = reminder.times.enumerated().map { index, time in
+            ProposedSlot(
+                id: "\(reminder.id)#\(index)",
+                timeOfDay: time,
+                provenance: .patternNoticed(basis: "you picked this"),
+                label: reminder.times.count == 1
+                    ? "Daily reminder"
+                    : "Reminder \(index + 1) of \(reminder.times.count)"
+            )
+        }
+        isPickingTimes = true
+    }
 
     private var timeText: String {
         let times = reminder.times.map(ProposalCard.format)
@@ -181,9 +252,21 @@ private struct ActiveReminderCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: NudgyTheme.Metric.md) {
             HStack(alignment: .top) {
-                Text(reminder.times.first.map(ProposalCard.format) ?? "Any time")
-                    .font(NudgyTheme.Typeface.clock())
-                    .foregroundStyle(NudgyTheme.Palette.primary)
+                Button {
+                    beginEditing()
+                } label: {
+                    HStack(spacing: NudgyTheme.Metric.xs) {
+                        Text(reminder.times.first.map(ProposalCard.format) ?? "No time")
+                            .font(NudgyTheme.Typeface.displayLarge())
+                            .foregroundStyle(NudgyTheme.Palette.primary)
+                        Image(systemName: "pencil")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(NudgyTheme.Palette.onSurfaceVariant)
+                    }
+                }
+                .buttonStyle(.plain)
+                .disabled(reminder.times.isEmpty)
+                .accessibilityLabel("Change the time")
                 Spacer(minLength: NudgyTheme.Metric.xs)
                 StatusChip(state: reminder.times.isEmpty ? .onlyWhenNeeded : .active)
             }
@@ -232,14 +315,68 @@ private struct ActiveReminderCard: View {
             }
 
             HStack(spacing: NudgyTheme.Metric.xs) {
-                Button("Change time", action: onChangeTime)
+                Button("Change time") { beginEditing() }
                     .buttonStyle(OutlineButtonStyle())
+                    .disabled(reminder.times.isEmpty)
                 Button("Stop reminding", action: onStop)
                     .buttonStyle(OutlineButtonStyle(tint: NudgyTheme.Palette.onSurfaceVariant))
                 Spacer(minLength: 0)
             }
         }
         .padding(NudgyTheme.Metric.lg)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .nudgyCard()
+        .sheet(isPresented: $isPickingTimes, onDismiss: {
+            onCommitTimes(editableSlots.compactMap(\.timeOfDay))
+        }) {
+            TimesSheet(title: reminder.title, slots: $editableSlots)
+        }
+    }
+}
+
+
+/// A medication taken only when needed. No time, no approval — just what the record says.
+private struct OnDemandRow: View {
+    let proposal: ReminderProposal
+    @State private var showSources = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: NudgyTheme.Metric.xs) {
+            HStack(alignment: .top) {
+                Text(proposal.title)
+                    .font(NudgyTheme.Typeface.titleLarge())
+                    .foregroundStyle(NudgyTheme.Palette.onSurface)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: NudgyTheme.Metric.xs)
+                StatusChip(state: .onlyWhenNeeded)
+            }
+
+            Text(proposal.sourceLabel)
+                .font(NudgyTheme.Typeface.bodyMedium())
+                .foregroundStyle(NudgyTheme.Palette.onSurfaceVariant)
+
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) { showSources.toggle() }
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: showSources ? "chevron.down" : "chevron.right")
+                        .font(.system(size: 10, weight: .semibold))
+                    Text(showSources ? "Hide where this came from" : "Where did this come from?")
+                }
+                .font(NudgyTheme.Typeface.bodyMedium().weight(.medium))
+                .foregroundStyle(NudgyTheme.Palette.primary)
+            }
+            .buttonStyle(.plain)
+
+            if showSources {
+                VStack(alignment: .leading, spacing: NudgyTheme.Metric.xs) {
+                    ForEach(proposal.sourceFacts) { fact in
+                        VerbatimQuote(label: fact.label, text: fact.verbatim, citation: fact.citation)
+                    }
+                }
+            }
+        }
+        .padding(NudgyTheme.Metric.md)
         .frame(maxWidth: .infinity, alignment: .leading)
         .nudgyCard()
     }

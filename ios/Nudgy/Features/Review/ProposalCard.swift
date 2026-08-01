@@ -16,6 +16,7 @@ struct ProposalCard: View {
     var onSkip: (ReminderProposal) -> Void
 
     @State private var isExpanded = false
+    @State private var isPickingTimes = false
     @State private var showSources = false
     @State private var showNotes = false
     @State private var workingSlots: [ProposedSlot]
@@ -113,6 +114,9 @@ struct ProposalCard: View {
         .padding(NudgyTheme.Metric.lg)
         .frame(maxWidth: .infinity, alignment: .leading)
         .nudgyCard()
+        .sheet(isPresented: $isPickingTimes) {
+            TimesSheet(title: proposal.title, slots: $workingSlots)
+        }
     }
 
     // MARK: - Header
@@ -120,7 +124,7 @@ struct ProposalCard: View {
     private var header: some View {
         HStack(alignment: .center, spacing: NudgyTheme.Metric.xs) {
             Button {
-                withAnimation(.easeInOut(duration: 0.22)) { isExpanded.toggle() }
+                isPickingTimes = true
             } label: {
                 HStack(spacing: NudgyTheme.Metric.xs) {
                     Text(headlineTime)
@@ -134,17 +138,29 @@ struct ProposalCard: View {
                         .lineLimit(1)
                         .minimumScaleFactor(0.6)
 
-                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                        .font(.system(size: 14, weight: .semibold))
+                    Image(systemName: "pencil")
+                        .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(NudgyTheme.Palette.onSurfaceVariant)
                 }
             }
             .buttonStyle(.plain)
-            .accessibilityLabel(isExpanded ? "Hide details" : "Show times and details")
+            .disabled(workingSlots.isEmpty)
+            .accessibilityLabel("Change the time")
 
             Spacer(minLength: NudgyTheme.Metric.xs)
 
             StatusChip(state: state)
+
+            Button {
+                withAnimation(.easeInOut(duration: 0.22)) { isExpanded.toggle() }
+            } label: {
+                Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(NudgyTheme.Palette.onSurfaceMuted)
+                    .frame(width: 22, height: 22)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(isExpanded ? "Hide details" : "Show details")
         }
     }
 
@@ -355,11 +371,10 @@ struct ProposalCard: View {
                 .disabled(!canApprove)
                 .opacity(canApprove ? 1 : 0.4)
 
-                Button(isExpanded ? "Done" : "Edit times") {
-                    withAnimation(.easeInOut(duration: 0.22)) { isExpanded.toggle() }
-                }
-                .buttonStyle(OutlineButtonStyle())
-                .frame(maxWidth: .infinity)
+                Button("Edit times") { isPickingTimes = true }
+                    .buttonStyle(OutlineButtonStyle())
+                    .frame(maxWidth: .infinity)
+                    .disabled(workingSlots.isEmpty)
 
                 // Skipping is a normal choice, not a failure, so it stays muted rather than the
                 // mockup's error red — red is reserved for things that actually went wrong.
@@ -517,5 +532,63 @@ private struct TimePickerSheet: View {
                 picked = fallback
             }
         }
+    }
+}
+
+/// Every dose in one sheet.
+///
+/// Four doses used to mean expanding a card and opening four separate pickers. This shows the
+/// whole day at once, which is also the only way to see whether the spacing makes sense.
+struct TimesSheet: View {
+    let title: String
+    @Binding var slots: [ProposedSlot]
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    ForEach($slots) { $slot in
+                        DatePicker(
+                            slot.label,
+                            selection: Binding(
+                                get: { Self.date(from: slot) },
+                                set: { newValue in
+                                    slot.timeOfDay = Calendar.current.dateComponents(
+                                        [.hour, .minute], from: newValue
+                                    )
+                                    // The user's own choice, and labelled as such — not promoted
+                                    // into something the chart said.
+                                    slot.provenance = .patternNoticed(basis: "you picked this")
+                                }
+                            ),
+                            displayedComponents: .hourAndMinute
+                        )
+                        .font(NudgyTheme.Typeface.bodyLarge())
+                    }
+                } footer: {
+                    Text("Your chart didn't name these times — I picked them, so change whatever "
+                         + "doesn't fit your day.")
+                        .font(NudgyTheme.Typeface.bodyMedium())
+                }
+            }
+            .navigationTitle(title)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+    }
+
+    private static func date(from slot: ProposedSlot) -> Date {
+        let calendar = Calendar.current
+        let components = slot.timeOfDay ?? slot.suggestion?.clockTime
+        guard let hour = components?.hour, let minute = components?.minute,
+              let date = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: Date())
+        else { return calendar.date(bySettingHour: 9, minute: 0, second: 0, of: Date()) ?? Date() }
+        return date
     }
 }

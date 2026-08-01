@@ -21,6 +21,8 @@ final class NudgySession: ObservableObject {
     @Published var composerText: String = ""
     /// Proposals produced by the engine that the user has not yet acted on.
     @Published private(set) var openProposals: [ReminderProposal] = []
+    /// Everything the engine produced this import, before tiering.
+    @Published private(set) var allProposals: [ReminderProposal] = []
 
     // MARK: - Subsystems
 
@@ -79,6 +81,7 @@ final class NudgySession: ObservableObject {
             await importDemoSources()
         } else if let record = vault.careRecord {
             rebuildProposals(from: record)
+            await activateReadyProposals()
             append(.note("Loaded \(record.medications.count) medications and "
                          + "\(record.therapyTasks.count) exercises from your encrypted vault."))
             await presentNextProposal()
@@ -139,6 +142,7 @@ final class NudgySession: ObservableObject {
         let snapshot = normalizer.snapshot(from: imports)
         vault.saveCareRecord(snapshot)
         rebuildProposals(from: snapshot)
+        await activateReadyProposals()
 
         append(.note("Imported from \(snapshot.sourceLabels.count) sources · stored encrypted on "
                      + "this device"))
@@ -169,9 +173,64 @@ final class NudgySession: ObservableObject {
     private func rebuildProposals(from snapshot: CareRecordSnapshot) {
         let skipped = Set(vault.skippedProposals.map(\.proposalID))
         let approved = Set(vault.approvedReminders.map(\.proposalID))
-        openProposals = engine
+        allProposals = engine
             .proposals(from: snapshot, skippedProposalIDs: skipped)
             .filter { !approved.contains($0.id) }
+        openProposals = allProposals.filter { $0.activationTier != .ready }
+    }
+
+    /// Schedules everything in the `ready` tier without asking.
+    ///
+    /// This is the approval model we settled on: review is expensive and habituating when it is a
+    /// wall of cards, so it is spent only where it buys something — conflicts and missing details.
+    /// Everything else starts running, says where it came from, and can be changed from the card
+    /// or from the notification itself.
+    private func activateReadyProposals() async {
+        let ready = allProposals.filter { $0.activationTier == .ready }
+        guard !ready.isEmpty else { return }
+
+        await ensureNotificationPermission()
+        var scheduled = 0
+        for proposal in ready {
+            let reminder = makeReminder(from: proposal)
+            vault.approve(reminder)
+            do {
+                try await scheduler.schedule(reminder)
+                scheduled += 1
+            } catch {
+                // Keep it in the list even if the OS refused — the user can retry from the card.
+            }
+        }
+        await scheduler.refreshPending()
+        allProposals.removeAll { $0.activationTier == .ready }
+
+        append(.note("\(scheduled) reminder\(scheduled == 1 ? "" : "s") set up from your records"))
+    }
+
+    private func makeReminder(from proposal: ReminderProposal) -> ApprovedReminder {
+        ApprovedReminder(
+            id: proposal.id,
+            proposalID: proposal.id,
+            kind: proposal.kind,
+            title: proposal.title,
+            body: proposal.subtitle ?? proposal.title,
+            times: proposal.slots.compactMap(\.timeOfDay),
+            sourceFacts: proposal.sourceFacts,
+            sourceLabel: proposal.sourceLabel,
+            dataOrigin: proposal.dataOrigin,
+            approvedAt: Date(),
+            isActive: true
+        )
+    }
+
+    /// Medications the record says are taken only when needed. Shown, never scheduled.
+    var onDemandProposals: [ReminderProposal] {
+        allProposals.filter { $0.activationTier == .onDemand }
+    }
+
+    /// Proposals genuinely waiting on a person.
+    var proposalsNeedingReview: [ReminderProposal] {
+        allProposals.filter { $0.activationTier == .needsYou }
     }
 
     // MARK: - Proposal review
@@ -260,6 +319,7 @@ final class NudgySession: ObservableObject {
 
     private func consume(_ proposalID: String) {
         openProposals.removeAll { $0.id == proposalID }
+        allProposals.removeAll { $0.id == proposalID }
     }
 
     private func ensureNotificationPermission() async {
@@ -431,14 +491,21 @@ final class NudgySession: ObservableObject {
         return sources
     }
 
-    /// Opens the chat on this reminder so its time can be changed in conversation.
-    func requestTimeChange(for reminder: ApprovedReminder) {
-        append(.user(text: "I'd like to change when you remind me about \(reminder.title).",
-                     wasSpoken: false))
-        append(.assistant(
-            text: "Sure. Tell me what time suits you better and I'll move it.",
-            narrationSource: .staticCopy
-        ))
+    /// Applies new times to a running reminder and reschedules it.
+    ///
+    /// Cancel-then-add through the scheduler, so changing four doses down to two does not strand
+    /// the notifications for the ones that went away.
+    func updateTimes(for reminder: ApprovedReminder, to times: [DateComponents]) async {
+        var updated = reminder
+        updated.times = times
+        await scheduler.cancel(for: reminder)
+        vault.approve(updated)
+        if !times.isEmpty {
+            do { try await scheduler.schedule(updated) } catch {
+                append(.note("Couldn't reschedule \(reminder.title): \(error.localizedDescription)"))
+            }
+        }
+        await scheduler.refreshPending()
     }
 
     /// Stops a running reminder. Reversible — the reminder stays in the vault, just inactive.

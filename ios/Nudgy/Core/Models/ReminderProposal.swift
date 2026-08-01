@@ -146,6 +146,33 @@ struct ReminderProposal: Codable, Hashable, Identifiable {
 
     var hasPossibleConcern: Bool { flags.contains { $0.severity == .possibleConcern } }
 
+    /// Something the person takes only when they need it. Never scheduled — a recurring alarm on
+    /// "as needed for pain" would turn an as-needed prescription into a standing one.
+    var isAsNeeded: Bool { schedulingDeclinedReason == .asNeededMedication }
+
+    /// How this proposal should be handled on import.
+    ///
+    /// Reviewing eighteen cards is not review — by the sixth, people are tapping Approve without
+    /// reading. Holding back only the genuinely ambiguous ones means the few that *do* need a human
+    /// actually get one.
+    enum ActivationTier {
+        /// Unambiguous and fully timed: schedule it, tell the user, let them change it later.
+        case ready
+        /// Sources disagree, or a required detail is missing. Waits for a person.
+        case needsYou
+        /// Taken only when needed. Kept as a record, never given a time.
+        case onDemand
+    }
+
+    var activationTier: ActivationTier {
+        if isAsNeeded { return .onDemand }
+        // A cross-source disagreement should never silently become a daily alarm, and a missing
+        // frequency is a dosing question Nudgy will not answer on its own.
+        if hasPossibleConcern || schedulingDeclinedReason != nil { return .needsYou }
+        if slots.isEmpty || needsTimeOfDay { return .needsYou }
+        return .ready
+    }
+
     /// v1 requires individual approval for every reminder, without exception.
     var requiresIndividualApproval: Bool { true }
 }
