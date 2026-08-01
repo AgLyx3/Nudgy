@@ -74,6 +74,18 @@ final class NotificationScheduler: ObservableObject {
     /// "Snooze 15 min" — ask again shortly.
     static let snoozeActionIdentifier = "nudgy.action.snooze15"
 
+    /// "Not this time" — the user telling us the dose slipped.
+    ///
+    /// This action exists because the alternative is inference, and inference here is unsafe.
+    /// Without it, a phone face-down in a bag is indistinguishable from a genuinely missed dose,
+    /// and anything built on that ambiguity would end up telling people they missed medication we
+    /// have no evidence they missed. A tapped "Not this time" is a fact the user reported. Silence
+    /// remains what it is: silence.
+    ///
+    /// Deliberately worded without judgement. "Missed" and "Skipped" both read as a small
+    /// accusation on a lock screen, and an accusation is a thing people stop tapping.
+    static let notThisTimeActionIdentifier = "nudgy.action.notThisTime"
+
     /// How long `snoozeActionIdentifier` defers by. Named so the app layer and the UI copy cannot
     /// drift apart.
     static let snoozeInterval: TimeInterval = 15 * 60
@@ -128,9 +140,14 @@ final class NotificationScheduler: ObservableObject {
             title: "Snooze 15 min",
             options: []
         )
+        let notThisTime = UNNotificationAction(
+            identifier: Self.notThisTimeActionIdentifier,
+            title: "Not this time",
+            options: []
+        )
         let category = UNNotificationCategory(
             identifier: Self.categoryIdentifier,
-            actions: [markDone, snooze],
+            actions: [markDone, snooze, notThisTime],
             intentIdentifiers: [],
             hiddenPreviewsBodyPlaceholder: "A reminder from Nudgy",
             options: [

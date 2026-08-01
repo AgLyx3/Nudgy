@@ -155,7 +155,7 @@ struct ReminderProposalEngine {
                     )
                 }
             }
-            if slots.allSatisfy({ $0.timeOfDay == nil || ScheduleResolver.isConvenienceSuggestion($0) }),
+            if slots.allSatisfy({ $0.timeOfDay == nil }),
                schedule.whenCodes.isEmpty {
                 flags.append(
                     ProposalFlag(
@@ -534,8 +534,9 @@ struct ReminderProposalEngine {
 
         var points: [Point] = []
         for (index, draft) in drafts.enumerated() {
-            for slot in draft.slots where ScheduleResolver.isConvenienceSuggestion(slot) {
-                guard let hour = slot.timeOfDay?.hour, let minute = slot.timeOfDay?.minute else { continue }
+            for slot in draft.slots {
+                guard let suggested = slot.suggestion?.clockTime,
+                      let hour = suggested.hour, let minute = suggested.minute else { continue }
                 points.append(Point(draftIndex: index, minutes: hour * 60 + minute))
             }
         }

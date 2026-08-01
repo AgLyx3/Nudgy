@@ -1,63 +1,121 @@
 import SwiftUI
 
-/// The visual language for a calm health aide.
+/// Nudgy's visual language, adopted from the "Clinical Zen" design system in
+/// `stitch_serene_health_assistant/serene_health/DESIGN.md`.
 ///
-/// The design doc asks for something that reads as "a private conversation", not a support chat.
-/// Practically that means: low-contrast warm neutrals rather than clinical white, generous line
-/// height, no hard-edged alert colors except where a genuine concern needs to be seen, and type
-/// that stays legible for someone reading a medication instruction without their glasses on.
+/// Two deliberate departures from that spec, both for safety rather than taste:
+///
+/// 1. **Concerns are amber, not red.** The spec reserves `error` (#ba1a1a) for alerts, and the
+///    mockup used it for a medication callout. Two clinics recording different instructions is
+///    something to raise with a care team, not an emergency, and alarm-red overstates it every
+///    time it appears. Red stays for genuine system failures only.
+/// 2. **A monospace slot exists** even though the spec is Inter throughout. Verbatim chart text is
+///    quoted, and a quotation has to look like one — that is a safety affordance, not decoration.
+///
+/// Inter is substituted with the system font at the spec'd sizes and weights. On iOS, SF matches
+/// Inter's proportions closely and avoids bundling a webfont; the metrics below are taken directly
+/// from the design system's typography scale.
 enum NudgyTheme {
 
     // MARK: - Color
 
     enum Palette {
-        /// Warm off-white. Pure white reads as clinical and is harsher at 6am.
-        static let canvas = Color(hex: 0xF7F5F2)
+        // Surfaces
+        static let background = Color(hex: 0xF8FAFB)
         static let surface = Color(hex: 0xFFFFFF)
-        static let surfaceSunken = Color(hex: 0xF1EEE9)
+        static let surfaceLow = Color(hex: 0xF2F4F5)
+        static let surfaceContainer = Color(hex: 0xECEEEF)
+        static let surfaceHigh = Color(hex: 0xE6E8E9)
 
-        static let ink = Color(hex: 0x2A2724)
-        static let inkSecondary = Color(hex: 0x6B655E)
-        static let inkTertiary = Color(hex: 0x9A938A)
+        // Text
+        static let onSurface = Color(hex: 0x191C1D)
+        static let onSurfaceVariant = Color(hex: 0x414942)
+        static let onSurfaceMuted = Color(hex: 0x717971)
 
-        /// Muted sage. Used for on-device/privacy affirmations — calm, not celebratory.
-        static let trust = Color(hex: 0x5C7A6B)
-        static let trustSoft = Color(hex: 0xE4EBE6)
+        // Primary — sage. Brand, primary actions, and record-sourced truth.
+        static let primary = Color(hex: 0x316342)
+        static let onPrimary = Color(hex: 0xFFFFFF)
+        static let primaryContainer = Color(hex: 0x4A7C59)
+        static let onPrimaryContainer = Color(hex: 0xE1FFE5)
+        static let primaryFixed = Color(hex: 0xB9EFC5)
 
-        /// Warm clay for the assistant's own voice.
-        static let accent = Color(hex: 0xB5714F)
-        static let accentSoft = Color(hex: 0xF6E9E1)
+        // Secondary — soft mint. Confirmed / done states.
+        static let secondaryContainer = Color(hex: 0xC0ECDC)
+        static let onSecondaryContainer = Color(hex: 0x264E42)
 
-        /// Deliberately amber rather than red. A source disagreement is something to look at with
-        /// your care team, not an emergency, and red would overstate it.
-        static let concern = Color(hex: 0x9A6B22)
-        static let concernSoft = Color(hex: 0xFAF0DC)
+        // Tertiary — gentle blue. Information, never urgency.
+        static let tertiary = Color(hex: 0x405D6A)
+        static let tertiaryContainer = Color(hex: 0xC8E7F7)
+        static let onTertiaryContainer = Color(hex: 0x2D4B57)
 
-        static let hairline = Color(hex: 0xE5E0D9)
+        /// Amber. Possible concerns and anything awaiting the user's judgement.
+        /// Tuned to sit inside the palette's muted register rather than shout over it.
+        static let concern = Color(hex: 0x8A6220)
+        static let concernContainer = Color(hex: 0xF9EEDC)
+        static let onConcernContainer = Color(hex: 0x5C3F0F)
+
+        /// Reserved for genuine failures — a vault that will not open, a notification that will
+        /// not schedule. Never used for clinical content.
+        static let error = Color(hex: 0xBA1A1A)
+        static let errorContainer = Color(hex: 0xFFDAD6)
+
+        static let outline = Color(hex: 0x717971)
+        static let outlineVariant = Color(hex: 0xC1C9BF)
+        static let hairline = Color(hex: 0xE2E8F0)
     }
 
-    // MARK: - Type
+    // MARK: - Typography
 
     enum Typeface {
-        static func title() -> Font { .system(.title2, design: .serif).weight(.semibold) }
-        static func cardTitle() -> Font { .system(.headline, design: .serif) }
-        /// Assistant prose. Serif at a comfortable size — this is the voice of the product.
-        static func body() -> Font { .system(.body, design: .serif) }
-        static func ui() -> Font { .system(.subheadline) }
-        static func label() -> Font { .system(.footnote, design: .rounded).weight(.medium) }
-        static func micro() -> Font { .system(.caption2, design: .rounded).weight(.semibold) }
-        /// Verbatim chart text. Monospaced so a quoted instruction is visibly a quotation.
-        static func verbatim() -> Font { .system(.footnote, design: .monospaced) }
+        static func displayLarge() -> Font { .system(size: 32, weight: .semibold) }
+        static func headlineMedium() -> Font { .system(size: 24, weight: .semibold) }
+        static func headlineSmall() -> Font { .system(size: 20, weight: .semibold) }
+        static func titleLarge() -> Font { .system(size: 18, weight: .medium) }
+        static func bodyLarge() -> Font { .system(size: 16, weight: .regular) }
+        static func bodyMedium() -> Font { .system(size: 14, weight: .regular) }
+        static func labelMedium() -> Font { .system(size: 12, weight: .medium) }
+        static func labelSmall() -> Font { .system(size: 11, weight: .semibold) }
+        /// Verbatim chart text. Monospaced so a quotation is visibly a quotation.
+        static func verbatim() -> Font { .system(size: 14, weight: .regular, design: .monospaced) }
+        /// The large clock time that anchors a reminder row.
+        static func clock() -> Font { .system(size: 28, weight: .semibold) }
     }
 
     // MARK: - Metrics
 
     enum Metric {
-        static let gutter: CGFloat = 20
-        static let cardRadius: CGFloat = 18
-        static let chipRadius: CGFloat = 9
-        static let stackGap: CGFloat = 14
-        static let tightGap: CGFloat = 6
+        static let base: CGFloat = 4
+        static let xs: CGFloat = 8
+        static let sm: CGFloat = 12
+        static let md: CGFloat = 16
+        static let lg: CGFloat = 24
+        static let xl: CGFloat = 32
+        static let containerMargin: CGFloat = 20
+        static let gutter: CGFloat = 16
+
+        static let radiusSmall: CGFloat = 4
+        static let radius: CGFloat = 8
+        static let radiusMedium: CGFloat = 12
+        static let radiusLarge: CGFloat = 16
+        static let radiusXL: CGFloat = 24
+    }
+
+    /// Level 1 elevation from the spec: soft, diffused, never a hard drop shadow.
+    static func cardShadow() -> some ViewModifier { CardShadow() }
+}
+
+private struct CardShadow: ViewModifier {
+    func body(content: Content) -> some View {
+        content.shadow(color: .black.opacity(0.04), radius: 10, x: 0, y: 4)
+    }
+}
+
+extension View {
+    /// White card, large radius, ambient shadow — the spec's primary container.
+    func nudgyCard(radius: CGFloat = NudgyTheme.Metric.radiusLarge) -> some View {
+        self
+            .background(NudgyTheme.Palette.surface, in: RoundedRectangle(cornerRadius: radius))
+            .modifier(CardShadow())
     }
 }
 
@@ -73,60 +131,120 @@ extension Color {
     }
 }
 
-// MARK: - Shared building blocks
+// MARK: - Shared components
 
-/// The small tag that states where a claim came from. Used everywhere a clinical statement appears.
+/// States a reminder can be in, and how each one looks.
+///
+/// `needsTime` exists because it is the **most common state in real data**, not an edge case.
+/// Synthea's records say "once daily" and stop. The mockup this design came from assumed every
+/// reminder has a confident clock time; almost none do.
+enum ReminderState {
+    case proposed
+    /// A time is filled in, but Nudgy picked it — the chart did not say when.
+    case suggested
+    case needsTime
+    case active
+    case onlyWhenNeeded
+    case done
+    case paused
+
+    var label: String {
+        switch self {
+        case .proposed: return "Proposed"
+        case .suggested: return "My suggestion"
+        case .needsTime: return "Needs a time"
+        case .active: return "On"
+        case .onlyWhenNeeded: return "When you need it"
+        case .done: return "Done"
+        case .paused: return "Paused"
+        }
+    }
+
+    var foreground: Color {
+        switch self {
+        case .proposed: return NudgyTheme.Palette.onTertiaryContainer
+        case .suggested: return NudgyTheme.Palette.onTertiaryContainer
+        case .needsTime: return NudgyTheme.Palette.onConcernContainer
+        case .active: return NudgyTheme.Palette.onSecondaryContainer
+        case .onlyWhenNeeded: return NudgyTheme.Palette.onSurfaceVariant
+        case .done: return NudgyTheme.Palette.onSecondaryContainer
+        case .paused: return NudgyTheme.Palette.onSurfaceMuted
+        }
+    }
+
+    var background: Color {
+        switch self {
+        case .proposed, .suggested: return NudgyTheme.Palette.tertiaryContainer
+        case .needsTime: return NudgyTheme.Palette.concernContainer
+        case .active, .done: return NudgyTheme.Palette.secondaryContainer
+        case .onlyWhenNeeded, .paused: return NudgyTheme.Palette.surfaceContainer
+        }
+    }
+}
+
+struct StatusChip: View {
+    let state: ReminderState
+
+    var body: some View {
+        Text(state.label.uppercased())
+            .font(NudgyTheme.Typeface.labelSmall())
+            .kerning(0.6)
+            .foregroundStyle(state.foreground)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(state.background, in: Capsule())
+    }
+}
+
+/// Says where a claim came from. Present on every clinical statement, without exception.
 struct ProvenanceBadge: View {
     let provenance: Provenance
 
     private var tint: Color {
         switch provenance {
-        case .fromYourRecord: return NudgyTheme.Palette.trust
-        case .patternNoticed: return NudgyTheme.Palette.inkSecondary
+        case .fromYourRecord: return NudgyTheme.Palette.primary
+        case .patternNoticed: return NudgyTheme.Palette.onSurfaceVariant
         case .needsReview: return NudgyTheme.Palette.concern
-        case .convenienceSuggestion: return NudgyTheme.Palette.accent
+        case .convenienceSuggestion: return NudgyTheme.Palette.tertiary
         }
     }
 
     private var background: Color {
         switch provenance {
-        case .fromYourRecord: return NudgyTheme.Palette.trustSoft
-        case .patternNoticed: return NudgyTheme.Palette.surfaceSunken
-        case .needsReview: return NudgyTheme.Palette.concernSoft
-        case .convenienceSuggestion: return NudgyTheme.Palette.accentSoft
+        case .fromYourRecord: return NudgyTheme.Palette.primaryFixed.opacity(0.5)
+        case .patternNoticed: return NudgyTheme.Palette.surfaceContainer
+        case .needsReview: return NudgyTheme.Palette.concernContainer
+        case .convenienceSuggestion: return NudgyTheme.Palette.tertiaryContainer
         }
     }
 
     var body: some View {
-        Text(provenance.badgeText.uppercased())
-            .font(NudgyTheme.Typeface.micro())
-            .kerning(0.6)
+        Text(provenance.badgeText)
+            .font(NudgyTheme.Typeface.labelSmall())
             .foregroundStyle(tint)
-            .padding(.horizontal, 8)
+            .padding(.horizontal, 9)
             .padding(.vertical, 4)
-            .background(background, in: RoundedRectangle(cornerRadius: NudgyTheme.Metric.chipRadius))
+            .background(background, in: Capsule())
             .accessibilityLabel("Source: \(provenance.badgeText)")
     }
 }
 
 /// A block of text quoted exactly from the record, with its attribution.
-///
-/// Verbatim display is a safety feature, not a stylistic one — see ARCHITECTURE.md §3.
 struct VerbatimQuote: View {
     let label: String
     let text: String
     let citation: SourceCitation
 
     var body: some View {
-        VStack(alignment: .leading, spacing: NudgyTheme.Metric.tightGap) {
+        VStack(alignment: .leading, spacing: 6) {
             Text(label.uppercased())
-                .font(NudgyTheme.Typeface.micro())
+                .font(NudgyTheme.Typeface.labelSmall())
                 .kerning(0.5)
-                .foregroundStyle(NudgyTheme.Palette.inkTertiary)
+                .foregroundStyle(NudgyTheme.Palette.onSurfaceMuted)
 
             Text(text)
                 .font(NudgyTheme.Typeface.verbatim())
-                .foregroundStyle(NudgyTheme.Palette.ink)
+                .foregroundStyle(NudgyTheme.Palette.onSurface)
                 .fixedSize(horizontal: false, vertical: true)
 
             HStack(spacing: 5) {
@@ -137,93 +255,112 @@ struct VerbatimQuote: View {
                     Text("· \(citation.dataOrigin.shortLabel)")
                 }
             }
-            .font(NudgyTheme.Typeface.micro())
-            .foregroundStyle(NudgyTheme.Palette.inkTertiary)
+            .font(NudgyTheme.Typeface.labelSmall())
+            .foregroundStyle(NudgyTheme.Palette.onSurfaceMuted)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(12)
+        .padding(NudgyTheme.Metric.sm)
         .background(
-            NudgyTheme.Palette.surfaceSunken,
-            in: RoundedRectangle(cornerRadius: 12)
+            NudgyTheme.Palette.surfaceLow,
+            in: RoundedRectangle(cornerRadius: NudgyTheme.Metric.radiusMedium)
         )
     }
 }
 
-/// A possible concern or informational note attached to a proposal.
+/// A possible concern or informational note.
 struct FlagRow: View {
     let flag: ProposalFlag
 
-    private var tint: Color {
-        flag.severity == .possibleConcern
-            ? NudgyTheme.Palette.concern
-            : NudgyTheme.Palette.inkSecondary
-    }
+    private var isConcern: Bool { flag.severity == .possibleConcern }
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
-            Image(systemName: flag.severity == .possibleConcern
-                  ? "exclamationmark.triangle"
-                  : "info.circle")
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(tint)
+            Image(systemName: isConcern ? "exclamationmark.circle" : "info.circle")
+                .font(.system(size: 14))
+                .foregroundStyle(isConcern
+                                 ? NudgyTheme.Palette.concern
+                                 : NudgyTheme.Palette.tertiary)
                 .padding(.top, 1)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(flag.title)
-                    .font(NudgyTheme.Typeface.label())
-                    .foregroundStyle(NudgyTheme.Palette.ink)
+                    .font(NudgyTheme.Typeface.bodyMedium().weight(.medium))
+                    .foregroundStyle(NudgyTheme.Palette.onSurface)
 
                 Text(flag.detail)
-                    .font(NudgyTheme.Typeface.ui())
-                    .foregroundStyle(NudgyTheme.Palette.inkSecondary)
+                    .font(NudgyTheme.Typeface.bodyMedium())
+                    .foregroundStyle(NudgyTheme.Palette.onSurfaceVariant)
                     .fixedSize(horizontal: false, vertical: true)
 
                 if let action = flag.suggestedAction {
                     Text(action)
-                        .font(NudgyTheme.Typeface.ui().italic())
-                        .foregroundStyle(tint)
+                        .font(NudgyTheme.Typeface.bodyMedium())
+                        .foregroundStyle(isConcern
+                                         ? NudgyTheme.Palette.concern
+                                         : NudgyTheme.Palette.tertiary)
                         .fixedSize(horizontal: false, vertical: true)
                         .padding(.top, 2)
                 }
             }
         }
-        .padding(12)
+        .padding(NudgyTheme.Metric.sm)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            flag.severity == .possibleConcern
-                ? NudgyTheme.Palette.concernSoft
-                : NudgyTheme.Palette.surfaceSunken,
-            in: RoundedRectangle(cornerRadius: 12)
+            isConcern ? NudgyTheme.Palette.concernContainer : NudgyTheme.Palette.surfaceLow,
+            in: RoundedRectangle(cornerRadius: NudgyTheme.Metric.radiusMedium)
         )
     }
 }
 
-/// Primary/secondary buttons sized for a calm, unhurried decision.
-struct CalmButtonStyle: ButtonStyle {
-    enum Emphasis { case primary, secondary, quiet }
-    var emphasis: Emphasis = .secondary
+// MARK: - Buttons
+
+struct PrimaryButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(NudgyTheme.Typeface.bodyMedium().weight(.semibold))
+            .foregroundStyle(NudgyTheme.Palette.onPrimary)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, NudgyTheme.Metric.sm)
+            .background(
+                NudgyTheme.Palette.primary,
+                in: RoundedRectangle(cornerRadius: NudgyTheme.Metric.radius)
+            )
+            .opacity(configuration.isPressed ? 0.75 : 1)
+            .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
+    }
+}
+
+struct OutlineButtonStyle: ButtonStyle {
+    var tint: Color = NudgyTheme.Palette.onSurface
 
     func makeBody(configuration: Configuration) -> some View {
-        let (fg, bg): (Color, Color) = {
-            switch emphasis {
-            case .primary: return (.white, NudgyTheme.Palette.trust)
-            case .secondary: return (NudgyTheme.Palette.ink, NudgyTheme.Palette.surfaceSunken)
-            case .quiet: return (NudgyTheme.Palette.inkSecondary, .clear)
-            }
-        }()
-
-        return configuration.label
-            .font(NudgyTheme.Typeface.label())
-            .foregroundStyle(fg)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .background(bg, in: Capsule())
+        configuration.label
+            .font(NudgyTheme.Typeface.bodyMedium().weight(.medium))
+            .foregroundStyle(tint)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, NudgyTheme.Metric.sm)
+            .background(
+                NudgyTheme.Palette.surface,
+                in: RoundedRectangle(cornerRadius: NudgyTheme.Metric.radius)
+            )
             .overlay {
-                if emphasis == .quiet {
-                    Capsule().stroke(NudgyTheme.Palette.hairline, lineWidth: 1)
-                }
+                RoundedRectangle(cornerRadius: NudgyTheme.Metric.radius)
+                    .stroke(NudgyTheme.Palette.hairline, lineWidth: 1)
             }
             .opacity(configuration.isPressed ? 0.65 : 1)
             .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
+    }
+}
+
+struct QuietButtonStyle: ButtonStyle {
+    var tint: Color = NudgyTheme.Palette.onSurfaceMuted
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(NudgyTheme.Typeface.bodyMedium().weight(.medium))
+            .foregroundStyle(tint)
+            .padding(.horizontal, NudgyTheme.Metric.sm)
+            .padding(.vertical, NudgyTheme.Metric.xs)
+            .opacity(configuration.isPressed ? 0.6 : 1)
     }
 }

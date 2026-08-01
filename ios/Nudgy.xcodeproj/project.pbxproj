@@ -6,12 +6,20 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		1A0000000000000000000012 /* LiteRTLM in Frameworks */ = {isa = PBXBuildFile; productRef = 1A0000000000000000000011 /* LiteRTLM */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		1A0000000000000000000005 /* Nudgy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Nudgy.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		1A0000000000000000000006 /* Nudgy */ = {isa = PBXFileSystemSynchronizedRootGroup; path = Nudgy; sourceTree = "<group>"; };
+		1A0000000000000000000006 /* Nudgy */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Nudgy;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -19,6 +27,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1A0000000000000000000012 /* LiteRTLM in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -60,6 +69,9 @@
 				1A0000000000000000000006 /* Nudgy */,
 			);
 			name = Nudgy;
+			packageProductDependencies = (
+				1A0000000000000000000011 /* LiteRTLM */,
+			);
 			productName = Nudgy;
 			productReference = 1A0000000000000000000005 /* Nudgy.app */;
 			productType = "com.apple.product-type.application";
@@ -88,6 +100,9 @@
 			);
 			mainGroup = 1A0000000000000000000002;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				1A0000000000000000000010 /* XCLocalSwiftPackageReference "ThirdParty/LiteRT-LM" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 1A0000000000000000000003 /* Products */;
 			projectDirPath = "";
@@ -181,6 +196,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2R4NNF332Z;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Nudgy opens the camera so you can photograph a medication label. In this version the photo is a demo affordance and is not analyzed or uploaded.";
@@ -212,6 +228,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2R4NNF332Z;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Nudgy opens the camera so you can photograph a medication label. In this version the photo is a demo affordance and is not analyzed or uploaded.";
@@ -258,6 +275,20 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		1A0000000000000000000010 /* XCLocalSwiftPackageReference "ThirdParty/LiteRT-LM" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "ThirdParty/LiteRT-LM";
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		1A0000000000000000000011 /* LiteRTLM */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = LiteRTLM;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 1A0000000000000000000001 /* Project object */;
 }

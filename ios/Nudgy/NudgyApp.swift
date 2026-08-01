@@ -6,7 +6,7 @@ struct NudgyApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ConversationScreen()
+            RootTabView()
                 .environmentObject(session)
                 .task { await session.start() }
         }

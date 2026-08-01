@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ZenHealth - Reminders</title>
+<!-- Google Fonts: Inter -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "error-container": "#ffdad6",
+                    "surface-dim": "#d8dadb",
+                    "on-surface-variant": "#414942",
+                    "on-tertiary": "#ffffff",
+                    "outline": "#717971",
+                    "on-error-container": "#93000a",
+                    "on-tertiary-container": "#eff9ff",
+                    "on-error": "#ffffff",
+                    "surface-variant": "#e1e3e4",
+                    "secondary": "#3e6659",
+                    "surface": "#f8fafb",
+                    "primary-fixed": "#b9efc5",
+                    "secondary-fixed-dim": "#a5d0c0",
+                    "secondary-fixed": "#c0ecdc",
+                    "on-surface": "#191c1d",
+                    "on-primary": "#ffffff",
+                    "on-primary-fixed-variant": "#1e5031",
+                    "tertiary-fixed": "#c8e7f7",
+                    "surface-container-high": "#e6e8e9",
+                    "primary-container": "#4a7c59",
+                    "error": "#ba1a1a",
+                    "surface-container-lowest": "#ffffff",
+                    "primary-fixed-dim": "#9dd3aa",
+                    "inverse-surface": "#2e3132",
+                    "on-primary-fixed": "#00210e",
+                    "on-tertiary-fixed-variant": "#2d4b57",
+                    "background": "#f8fafb",
+                    "surface-bright": "#f8fafb",
+                    "inverse-primary": "#9dd3aa",
+                    "primary": "#316342",
+                    "on-secondary-container": "#446c5f",
+                    "on-secondary-fixed-variant": "#264e42",
+                    "on-secondary": "#ffffff",
+                    "tertiary-fixed-dim": "#accbda",
+                    "outline-variant": "#c1c9bf",
+                    "secondary-container": "#c0ecdc",
+                    "on-tertiary-fixed": "#001f29",
+                    "surface-container-highest": "#e1e3e4",
+                    "on-secondary-fixed": "#002018",
+                    "surface-tint": "#376847",
+                    "tertiary-container": "#587683",
+                    "surface-container-low": "#f2f4f5",
+                    "tertiary": "#405d6a",
+                    "inverse-on-surface": "#eff1f2",
+                    "on-background": "#191c1d",
+                    "surface-container": "#eceeef",
+                    "on-primary-container": "#e1ffe5"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "lg": "24px",
+                    "gutter": "16px",
+                    "md": "16px",
+                    "sm": "12px",
+                    "xs": "8px",
+                    "container-margin": "20px",
+                    "base": "4px",
+                    "xl": "32px"
+            },
+            "fontFamily": {
+                    "headline-sm": ["Inter"],
+                    "display-lg": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "body-md": ["Inter"],
+                    "title-lg": ["Inter"],
+                    "label-md": ["Inter"],
+                    "headline-lg-mobile": ["Inter"],
+                    "body-lg": ["Inter"]
+            },
+            "fontSize": {
+                    "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "title-lg": ["18px", {"lineHeight": "24px", "fontWeight": "500"}],
+                    "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "600"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .soft-shadow { box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.04); }
+        .active-shadow { box-shadow: 0px 8px 24px rgba(74, 124, 89, 0.1); }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface min-h-screen pb-24">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-on-surface border-b border-outline-variant dark:border-outline sticky top-0 z-40">
+<div class="flex justify-between items-center w-full px-container-margin py-xs max-w-7xl mx-auto">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A professional studio portrait of a calm middle-aged individual with a warm smile, set against a soft blurred medical office background. The lighting is bright and airy, reflecting a clean clinical zen aesthetic with soft sage green and white tones throughout the composition." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAeN4wM5Cwq2nqPzra3UKHuD_eb2WeySVp9FS2VL-xLO7bPfy-a9I9YbiFlL8yVodnRni3VbaHtCGRPipqEoICbhUzfO63L8mUp1xR8bn0YGhkeu45_zGBPaKyahb-7zEsDZSOW4w1u3_qg_4WdINyRJY3nQfSHuEariiTWXKZkcgkFIlveVevZj7wHj9NOaHjrWRcx9Vq-VuDGVqYzMKM5awiN_mFQVOhLJTNm05Nc3W9wxNZVhmRBzg"/>
+</div>
+<h1 class="font-headline-sm text-headline-sm font-semibold text-primary dark:text-primary-fixed-dim">ZenHealth</h1>
+</div>
+<button class="p-2 rounded-full hover:bg-surface-container-low dark:hover:bg-surface-container-highest transition-colors duration-200">
+<span class="material-symbols-outlined text-on-surface-variant dark:text-surface-variant">settings</span>
+</button>
+</div>
+</header>
+<main class="max-w-7xl mx-auto px-container-margin pt-lg">
+<!-- Header Section -->
+<section class="mb-xl">
+<div class="flex flex-col gap-xs">
+<span class="font-label-md text-label-md text-secondary uppercase tracking-widest">Today's Schedule</span>
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">Reminders</h2>
+</div>
+</section>
+<!-- Timeline / Feed -->
+<div class="space-y-lg relative">
+<!-- Vertical Line Decor -->
+<div class="absolute left-[23px] top-4 bottom-4 w-0.5 bg-outline-variant/30 -z-10"></div>
+<!-- Card 1: Proposed Medication -->
+<div class="flex gap-md group">
+<div class="flex flex-col items-center">
+<div class="w-12 h-12 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center z-10">
+<span class="material-symbols-outlined">medication</span>
+</div>
+</div>
+<div class="flex-1 bg-surface-container-lowest rounded-xl p-lg soft-shadow border border-outline-variant/20 transition-all hover:active-shadow">
+<div class="flex justify-between items-start mb-sm">
+<div class="flex items-center gap-xs">
+<span class="font-display-lg text-display-lg text-primary">08:00 AM</span>
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" style="font-size: 20px;">expand_more</span>
+</button>
+</div>
+<span class="px-sm py-1 rounded-full bg-tertiary-container/10 text-tertiary font-label-md text-label-md uppercase">Proposed</span>
+</div>
+<h3 class="font-title-lg text-title-lg text-on-surface font-bold mb-xs">Amoxicillin 500mg</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-md">Source: City General Hospital</p>
+<div class="flex items-start gap-sm p-sm bg-error-container/30 rounded-lg mb-md">
+<span class="material-symbols-outlined text-error" style="font-variation-settings: 'FILL' 1;">warning</span>
+<div>
+<p class="font-label-md text-label-md text-on-error-container font-bold">Risk: Take with food</p>
+<p class="font-body-md text-body-md text-on-surface-variant">Avoid dairy for 2 hours before/after to ensure maximum absorption.</p>
+</div>
+</div>
+<div class="flex flex-wrap gap-sm pt-sm border-t border-outline-variant/30">
+<button class="flex-1 py-xs px-md bg-primary text-on-primary font-label-md text-label-md rounded-lg transition-transform active:scale-95">Approve</button>
+<button class="flex-1 py-xs px-md border border-outline text-on-surface-variant font-label-md text-label-md rounded-lg hover:bg-surface-container-low transition-colors">Edit</button>
+<button class="flex-1 py-xs px-md text-error font-label-md text-label-md rounded-lg hover:bg-error-container/20 transition-colors">Skip</button>
+</div>
+</div>
+</div>
+<!-- Card 2: Active Nutrition -->
+<div class="flex gap-md group">
+<div class="flex flex-col items-center">
+<div class="w-12 h-12 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center z-10">
+<span class="material-symbols-outlined">restaurant</span>
+</div>
+</div>
+<div class="flex-1 bg-surface-container-lowest rounded-xl p-lg soft-shadow border border-outline-variant/20 transition-all hover:active-shadow">
+<div class="flex justify-between items-start mb-sm">
+<div class="flex items-center gap-xs">
+<span class="font-display-lg text-display-lg text-primary">12:30 PM</span>
+</div>
+<span class="px-sm py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-md text-label-md uppercase">Active</span>
+</div>
+<h3 class="font-title-lg text-title-lg text-on-surface font-bold mb-xs">High Protein Lunch</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-md">Source: ZenHealth AI Personalized Plan</p>
+<div class="mb-md">
+<div class="flex justify-between items-center mb-1">
+<span class="font-label-md text-label-md text-on-surface-variant">Prep Progress</span>
+<span class="font-label-md text-label-md text-primary">65%</span>
+</div>
+<div class="w-full h-2 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-gradient-to-r from-secondary to-primary w-[65%] rounded-full"></div>
+</div>
+</div>
+<div class="flex flex-wrap gap-sm pt-sm border-t border-outline-variant/30">
+<button class="flex-1 py-xs px-md border border-outline text-on-surface-variant font-label-md text-label-md rounded-lg hover:bg-surface-container-low transition-colors">Change Time</button>
+<button class="flex-1 py-xs px-md border border-outline text-error font-label-md text-label-md rounded-lg hover:bg-error-container/20 transition-colors">Stop Reminding</button>
+</div>
+</div>
+</div>
+<!-- Card 3: Proposed Exercise -->
+<div class="flex gap-md group">
+<div class="flex flex-col items-center">
+<div class="w-12 h-12 rounded-full bg-tertiary-container/20 text-tertiary flex items-center justify-center z-10">
+<span class="material-symbols-outlined">fitness_center</span>
+</div>
+</div>
+<div class="flex-1 bg-surface-container-lowest rounded-xl p-lg soft-shadow border border-outline-variant/20 transition-all hover:active-shadow">
+<div class="flex justify-between items-start mb-sm">
+<div class="flex items-center gap-xs">
+<span class="font-display-lg text-display-lg text-primary">05:00 PM</span>
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" style="font-size: 20px;">expand_more</span>
+</button>
+</div>
+<span class="px-sm py-1 rounded-full bg-tertiary-container/10 text-tertiary font-label-md text-label-md uppercase">Proposed</span>
+</div>
+<h3 class="font-title-lg text-title-lg text-on-surface font-bold mb-xs">Post-Work Mobility Flow</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-md">Source: Recovery Specialist Suggestion</p>
+<div class="flex items-start gap-sm p-sm bg-tertiary-container/10 rounded-lg mb-md">
+<span class="material-symbols-outlined text-tertiary">info</span>
+<div>
+<p class="font-body-md text-body-md text-on-surface-variant">Recommended for lumbar support after 8 hours of sitting.</p>
+</div>
+</div>
+<div class="flex flex-wrap gap-sm pt-sm border-t border-outline-variant/30">
+<button class="flex-1 py-xs px-md bg-primary text-on-primary font-label-md text-label-md rounded-lg transition-transform active:scale-95">Approve</button>
+<button class="flex-1 py-xs px-md border border-outline text-on-surface-variant font-label-md text-label-md rounded-lg hover:bg-surface-container-low transition-colors">Edit</button>
+<button class="flex-1 py-xs px-md text-error font-label-md text-label-md rounded-lg hover:bg-error-container/20 transition-colors">Skip</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Future Space / Placeholder for empty state logic -->
+<div class="mt-xl text-center py-lg opacity-40">
+<span class="material-symbols-outlined text-4xl mb-sm">calendar_today</span>
+<p class="font-body-md text-body-md">End of today's proactive feed</p>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-gutter pb-4 pt-2 bg-surface dark:bg-on-surface shadow-[0px_-4px_20px_rgba(0,0,0,0.04)] rounded-t-xl">
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant px-5 py-1 hover:text-primary dark:hover:text-primary-fixed transition-transform duration-150 active:scale-90" href="#">
+<span class="material-symbols-outlined mb-1">hub</span>
+<span class="font-label-md text-label-md">Portal</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-secondary-container dark:bg-secondary text-on-secondary-container dark:text-on-secondary rounded-full px-5 py-1 transition-transform duration-150 active:scale-90" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">notifications</span>
+<span class="font-label-md text-label-md">Reminders</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant px-5 py-1 hover:text-primary dark:hover:text-primary-fixed transition-transform duration-150 active:scale-90" href="#">
+<span class="material-symbols-outlined mb-1">chat_bubble</span>
+<span class="font-label-md text-label-md">AI Chat</span>
+</a>
+</nav>
+<script>
+        // Simple micro-interaction for card hover/active states
+        document.querySelectorAll('.soft-shadow').forEach(card => {
+            card.addEventListener('mousedown', () => {
+                card.classList.add('scale-[0.98]');
+            });
+            card.addEventListener('mouseup', () => {
+                card.classList.remove('scale-[0.98]');
+            });
+            card.addEventListener('mouseleave', () => {
+                card.classList.remove('scale-[0.98]');
+            });
+        });
+
+        // Simulating 'Approve' action
+        document.querySelectorAll('button').forEach(btn => {
+            if(btn.innerText === 'Approve') {
+                btn.addEventListener('click', (e) => {
+                    const card = e.target.closest('.flex-1');
+                    const badge = card.querySelector('.font-label-md.uppercase');
+                    if(badge) {
+                        badge.innerText = 'Active';
+                        badge.classList.remove('bg-tertiary-container/10', 'text-tertiary');
+                        badge.classList.add('bg-secondary-container', 'text-on-secondary-container');
+                        
+                        // Change buttons
+                        const btnContainer = card.querySelector('.border-t');
+                        btnContainer.innerHTML = `
+                            <button class="flex-1 py-xs px-md border border-outline text-on-surface-variant font-label-md text-label-md rounded-lg hover:bg-surface-container-low transition-colors">Change Time</button>
+                            <button class="flex-1 py-xs px-md border border-outline text-error font-label-md text-label-md rounded-lg hover:bg-error-container/20 transition-colors">Stop Reminding</button>
+                        `;
+                    }
+                });
+            }
+        });
+    </script>
+</body></html>

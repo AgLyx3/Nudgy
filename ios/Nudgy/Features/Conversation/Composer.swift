@@ -47,11 +47,11 @@ struct Composer: View {
             quickActions
             inputRow
         }
-        .padding(.horizontal, NudgyTheme.Metric.gutter)
+        .padding(.horizontal, NudgyTheme.Metric.containerMargin)
         .padding(.top, 12)
         .padding(.bottom, 8)
         .background(
-            NudgyTheme.Palette.canvas
+            NudgyTheme.Palette.background
                 .overlay(alignment: .top) {
                     Rectangle()
                         .fill(NudgyTheme.Palette.hairline)
@@ -67,7 +67,7 @@ struct Composer: View {
             HStack(spacing: 8) {
                 ForEach(QuickAction.allCases) { action in
                     Button(action.title) { onQuickAction(action) }
-                        .buttonStyle(CalmButtonStyle(emphasis: .quiet))
+                        .buttonStyle(QuietButtonStyle())
                 }
 
                 Button {
@@ -75,7 +75,7 @@ struct Composer: View {
                 } label: {
                     Label("Add from photo", systemImage: "camera")
                 }
-                .buttonStyle(CalmButtonStyle(emphasis: .quiet))
+                .buttonStyle(QuietButtonStyle())
             }
             .padding(.horizontal, 1)
         }
@@ -87,7 +87,7 @@ struct Composer: View {
         HStack(spacing: 10) {
             HStack(spacing: 6) {
                 TextField("Ask privately…", text: $text, axis: .vertical)
-                    .font(NudgyTheme.Typeface.ui())
+                    .font(NudgyTheme.Typeface.bodyMedium())
                     .lineLimit(1...4)
                     .focused($isTextFocused)
                     .submitLabel(.send)
@@ -97,7 +97,7 @@ struct Composer: View {
                     Button(action: send) {
                         Image(systemName: "arrow.up.circle.fill")
                             .font(.system(size: 24))
-                            .foregroundStyle(NudgyTheme.Palette.trust)
+                            .foregroundStyle(NudgyTheme.Palette.primary)
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("Send message")
