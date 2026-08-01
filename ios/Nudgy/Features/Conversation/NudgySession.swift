@@ -349,6 +349,106 @@ final class NudgySession: ObservableObject {
         return full.split(separator: " ").first.map(String.init)
     }
 
+
+    // MARK: - Reminders tab
+
+    /// Reminders that are live right now, newest first.
+    var activeReminders: [ApprovedReminder] {
+        vault.approvedReminders.filter(\.isActive).sorted { lhs, rhs in
+            let l = lhs.times.first.flatMap { ($0.hour ?? 0) * 60 + ($0.minute ?? 0) } ?? Int.max
+            let r = rhs.times.first.flatMap { ($0.hour ?? 0) * 60 + ($0.minute ?? 0) } ?? Int.max
+            return l < r
+        }
+    }
+
+    /// First name, when the record supplies one. Used only for greeting.
+    var greetingName: String? {
+        vault.careRecord?.patientDisplayName?
+            .split(separator: " ").first.map(String.init)
+    }
+
+    /// What the Portal tab lists: **connections**, not practitioners.
+    ///
+    /// The practitioner who wrote a prescription is attribution and belongs on the reminder card.
+    /// This screen answers a different question — where is Nudgy getting records from, and what
+    /// is not hooked up yet.
+    var connectedSources: [ConnectedSource] {
+        let record = vault.careRecord
+        let medications = record?.medications ?? []
+        let therapy = record?.therapyTasks ?? []
+
+        func counts(for origin: DataOrigin) -> Int {
+            medications.filter { $0.dataOrigin == origin }.count
+                + therapy.filter { $0.dataOrigin == origin }.count
+        }
+
+        var sources: [ConnectedSource] = []
+
+        let syntheaCount = counts(for: .syntheaSynthetic)
+        if syntheaCount > 0 {
+            sources.append(
+                ConnectedSource(
+                    id: "synthea",
+                    name: "Sample health record",
+                    detail: "A synthetic patient record, loaded from this app",
+                    origin: .syntheaSynthetic,
+                    status: .loaded(itemCount: syntheaCount)
+                )
+            )
+        }
+
+        let authoredCount = counts(for: .authoredDemo)
+        if authoredCount > 0 {
+            sources.append(
+                ConnectedSource(
+                    id: "portal-export",
+                    name: "Sample portal export",
+                    detail: "A demo export standing in for a clinic download",
+                    origin: .authoredDemo,
+                    status: .loaded(itemCount: authoredCount)
+                )
+            )
+        }
+
+        sources.append(
+            ConnectedSource(
+                id: "mychart",
+                name: "MyChart",
+                detail: "Sign in with your own account to pull your real records",
+                origin: .liveFHIR,
+                status: .notConnected
+            )
+        )
+        sources.append(
+            ConnectedSource(
+                id: "apple-health",
+                name: "Apple Health",
+                detail: "Medications and records you have already connected on this phone",
+                origin: .liveFHIR,
+                status: .notConnected
+            )
+        )
+        return sources
+    }
+
+    /// Opens the chat on this reminder so its time can be changed in conversation.
+    func requestTimeChange(for reminder: ApprovedReminder) {
+        append(.user(text: "I'd like to change when you remind me about \(reminder.title).",
+                     wasSpoken: false))
+        append(.assistant(
+            text: "Sure. Tell me what time suits you better and I'll move it.",
+            narrationSource: .staticCopy
+        ))
+    }
+
+    /// Stops a running reminder. Reversible — the reminder stays in the vault, just inactive.
+    func stopReminding(_ reminder: ApprovedReminder) async {
+        await scheduler.cancel(for: reminder)
+        vault.removeReminder(id: reminder.id)
+        await scheduler.refreshPending()
+        append(.note("Stopped reminding you about \(reminder.title)."))
+    }
+
     // MARK: - Plumbing
 
     private func append(_ content: TimelineEntry.Content) {

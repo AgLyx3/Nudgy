@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ZenHealth - AI Chat</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "error-container": "#ffdad6",
+                    "surface-dim": "#d8dadb",
+                    "on-surface-variant": "#414942",
+                    "on-tertiary": "#ffffff",
+                    "outline": "#717971",
+                    "on-error-container": "#93000a",
+                    "on-tertiary-container": "#eff9ff",
+                    "on-error": "#ffffff",
+                    "surface-variant": "#e1e3e4",
+                    "secondary": "#3e6659",
+                    "surface": "#f8fafb",
+                    "primary-fixed": "#b9efc5",
+                    "secondary-fixed-dim": "#a5d0c0",
+                    "secondary-fixed": "#c0ecdc",
+                    "on-surface": "#191c1d",
+                    "on-primary": "#ffffff",
+                    "on-primary-fixed-variant": "#1e5031",
+                    "tertiary-fixed": "#c8e7f7",
+                    "surface-container-high": "#e6e8e9",
+                    "primary-container": "#4a7c59",
+                    "error": "#ba1a1a",
+                    "surface-container-lowest": "#ffffff",
+                    "primary-fixed-dim": "#9dd3aa",
+                    "inverse-surface": "#2e3132",
+                    "on-primary-fixed": "#00210e",
+                    "on-tertiary-fixed-variant": "#2d4b57",
+                    "background": "#f8fafb",
+                    "surface-bright": "#f8fafb",
+                    "inverse-primary": "#9dd3aa",
+                    "primary": "#316342",
+                    "on-secondary-container": "#446c5f",
+                    "on-secondary-fixed-variant": "#264e42",
+                    "on-secondary": "#ffffff",
+                    "tertiary-fixed-dim": "#accbda",
+                    "outline-variant": "#c1c9bf",
+                    "secondary-container": "#c0ecdc",
+                    "on-tertiary-fixed": "#001f29",
+                    "surface-container-highest": "#e1e3e4",
+                    "on-secondary-fixed": "#002018",
+                    "surface-tint": "#376847",
+                    "tertiary-container": "#587683",
+                    "surface-container": "#eceeef",
+                    "on-primary-container": "#e1ffe5"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "lg": "24px",
+                    "gutter": "16px",
+                    "md": "16px",
+                    "sm": "12px",
+                    "xs": "8px",
+                    "container-margin": "20px",
+                    "base": "4px",
+                    "xl": "32px"
+            },
+            "fontFamily": {
+                    "headline-sm": ["Inter"],
+                    "display-lg": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "body-md": ["Inter"],
+                    "title-lg": ["Inter"],
+                    "label-md": ["Inter"],
+                    "headline-lg-mobile": ["Inter"],
+                    "body-lg": ["Inter"]
+            },
+            "fontSize": {
+                    "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "title-lg": ["18px", {"lineHeight": "24px", "fontWeight": "500"}],
+                    "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "600"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafb; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .message-gradient { background: linear-gradient(135deg, #c0ecdc 0%, #b9efc5 100%); }
+        .glass-blur { backdrop-filter: blur(8px); background-color: rgba(255, 255, 255, 0.8); }
+    </style>
+</head>
+<body class="bg-surface text-on-surface antialiased">
+<!-- Top App Bar -->
+<header class="fixed top-0 left-0 right-0 z-50 bg-surface border-b border-outline-variant">
+<div class="flex justify-between items-center w-full px-container-margin py-xs max-w-7xl mx-auto">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 rounded-full overflow-hidden border border-outline-variant bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="A professional close-up headshot of a smiling user with soft, natural lighting against a clean, minimalist interior office background. The overall aesthetic is bright, professional, and tranquil, reflecting the clinical zen philosophy of the health application with soft sage green and neutral tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD5VjEhzjQ9oZGN4MIdMkZbs9KMt4lzVOLVKGHkHZA4y2Oyir-X2SluuB2-iD-Zj9AX19ET5X89xYHP29evDxefdBDD3gECqXKYscQkU6ydAxBNn-YSOVZ4lHOyHd_0t2wuS-l1mmdz0sf4ghGO59Q-75Tf4xdLiZVbdY7sTpbAiyO1HEAOssRdOQE6e-qNFzDw3-ExxIXFDSZLrFiE447G7sqRyciz77ZyC-BxZLiYwwqYQV9et1_-JA"/>
+</div>
+<h1 class="font-headline-sm text-headline-sm font-semibold text-primary">ZenHealth</h1>
+</div>
+<button class="w-10 h-10 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container-low transition-colors duration-200">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="pt-[60px] pb-[180px] min-h-screen max-w-2xl mx-auto px-container-margin">
+<!-- Welcome / Personality Intro -->
+<div class="py-xl text-center">
+<div class="w-16 h-16 bg-secondary-container rounded-3xl mx-auto flex items-center justify-center mb-md shadow-sm">
+<span class="material-symbols-outlined text-secondary text-3xl" style="font-variation-settings: 'FILL' 1;">spa</span>
+</div>
+<h2 class="font-headline-md text-headline-md text-on-surface mb-xs">Hello, I'm Zen</h2>
+<p class="font-body-md text-body-md text-on-surface-variant px-lg">Your calm, empathetic health companion. How can I help you feel better today?</p>
+</div>
+<!-- Chat History -->
+<div class="flex flex-col gap-lg" id="chat-container">
+<!-- Assistant Message -->
+<div class="flex items-start gap-sm max-w-[85%]">
+<div class="mt-1 w-8 h-8 rounded-full bg-secondary-container flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-secondary text-lg" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant p-md rounded-2xl rounded-tl-none shadow-[0px_4px_20px_rgba(0,0,0,0.04)]">
+<p class="font-body-md text-body-md text-on-surface">Good morning! I noticed your sleep quality was slightly lower last night. Would you like to talk about some relaxation techniques before bed tonight?</p>
+<span class="block mt-xs font-label-md text-label-md text-on-surface-variant opacity-60">08:30 AM</span>
+</div>
+</div>
+<!-- User Message -->
+<div class="flex items-start gap-sm max-w-[85%] self-end flex-row-reverse">
+<div class="mt-1 w-8 h-8 rounded-full bg-primary-container flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-on-primary text-lg" style="font-variation-settings: 'FILL' 1;">person</span>
+</div>
+<div class="bg-primary-container p-md rounded-2xl rounded-tr-none shadow-sm">
+<p class="font-body-md text-body-md text-on-primary">Yes, that would be helpful. Also, I've been feeling a bit of a dull headache today.</p>
+<span class="block mt-xs font-label-md text-label-md text-on-primary-container opacity-80 text-right">08:32 AM</span>
+</div>
+</div>
+<!-- Assistant Message (Empathetic) -->
+<div class="flex items-start gap-sm max-w-[85%]">
+<div class="mt-1 w-8 h-8 rounded-full bg-secondary-container flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-secondary text-lg" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant p-md rounded-2xl rounded-tl-none shadow-[0px_4px_20px_rgba(0,0,0,0.04)]">
+<p class="font-body-md text-body-md text-on-surface">I'm sorry to hear about your headache. Let's keep an eye on that. To start, make sure you're hydrated—would you like me to set a reminder for water intake?</p>
+<p class="font-body-md text-body-md text-on-surface mt-sm">Regarding sleep, we could try a 5-minute breathing exercise together.</p>
+<span class="block mt-xs font-label-md text-label-md text-on-surface-variant opacity-60">08:33 AM</span>
+</div>
+</div>
+</div>
+</main>
+<!-- Floating Bottom Section (Chips + Input) -->
+<div class="fixed bottom-[80px] left-0 right-0 px-container-margin z-40 max-w-2xl mx-auto">
+<!-- Quick Action Chips -->
+<div class="flex gap-sm overflow-x-auto hide-scrollbar pb-md">
+<button class="whitespace-nowrap px-md py-sm bg-tertiary-fixed text-on-tertiary-fixed-variant rounded-full font-label-md text-label-md hover:bg-tertiary-fixed-dim transition-colors flex items-center gap-xs">
+<span class="material-symbols-outlined text-md" data-icon="medical_services">medical_services</span>
+                Ask about my symptoms
+            </button>
+<button class="whitespace-nowrap px-md py-sm bg-tertiary-fixed text-on-tertiary-fixed-variant rounded-full font-label-md text-label-md hover:bg-tertiary-fixed-dim transition-colors flex items-center gap-xs">
+<span class="material-symbols-outlined text-md" data-icon="pill">pill</span>
+                Check medication side effects
+            </button>
+<button class="whitespace-nowrap px-md py-sm bg-tertiary-fixed text-on-tertiary-fixed-variant rounded-full font-label-md text-label-md hover:bg-tertiary-fixed-dim transition-colors flex items-center gap-xs">
+<span class="material-symbols-outlined text-md" data-icon="description">description</span>
+                Summarize health records
+            </button>
+</div>
+<!-- Input Area -->
+<div class="bg-surface-container-lowest border border-outline-variant p-xs rounded-full shadow-lg flex items-center gap-xs">
+<button class="w-10 h-10 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+</button>
+<input class="flex-1 bg-transparent border-none focus:ring-0 text-body-md font-body-md py-sm px-xs placeholder:text-on-surface-variant/50" placeholder="Type a message..." type="text"/>
+<button class="w-10 h-10 flex items-center justify-center rounded-full bg-primary text-on-primary hover:bg-primary/90 transition-transform active:scale-90 duration-150">
+<span class="material-symbols-outlined" data-icon="send" style="font-variation-settings: 'FILL' 1;">send</span>
+</button>
+</div>
+</div>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-gutter pb-4 pt-2 bg-surface shadow-[0px_-4px_20px_rgba(0,0,0,0.04)] rounded-t-xl">
+<!-- Portal -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary px-5 py-1 transition-transform duration-150 scale-95 active:scale-90" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="hub">hub</span>
+<span class="font-label-md text-label-md">Portal</span>
+</a>
+<!-- Reminders -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary px-5 py-1 transition-transform duration-150 scale-95 active:scale-90" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="notifications">notifications</span>
+<span class="font-label-md text-label-md">Reminders</span>
+</a>
+<!-- AI Chat (ACTIVE) -->
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-5 py-1 transition-transform duration-150 scale-95 active:scale-90" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="chat_bubble" style="font-variation-settings: 'FILL' 1;">chat_bubble</span>
+<span class="font-label-md text-label-md">AI Chat</span>
+</a>
+</nav>
+<script>
+        // Micro-interaction for input field
+        const input = document.querySelector('input');
+        const sendBtn = document.querySelector('button .material-symbols-outlined[data-icon="send"]').parentElement;
+
+        input.addEventListener('focus', () => {
+            input.parentElement.classList.add('border-primary');
+            input.parentElement.classList.remove('border-outline-variant');
+        });
+
+        input.addEventListener('blur', () => {
+            input.parentElement.classList.remove('border-primary');
+            input.parentElement.classList.add('border-outline-variant');
+        });
+
+        // Simple mock send function
+        sendBtn.addEventListener('click', () => {
+            if (input.value.trim() !== "") {
+                const chatContainer = document.getElementById('chat-container');
+                const userMsg = document.createElement('div');
+                userMsg.className = "flex items-start gap-sm max-w-[85%] self-end flex-row-reverse animate-in fade-in slide-in-from-bottom-2 duration-300";
+                userMsg.innerHTML = `
+                    <div class="mt-1 w-8 h-8 rounded-full bg-primary-container flex items-center justify-center flex-shrink-0">
+                        <span class="material-symbols-outlined text-on-primary text-lg" style="font-variation-settings: 'FILL' 1;">person</span>
+                    </div>
+                    <div class="bg-primary-container p-md rounded-2xl rounded-tr-none shadow-sm">
+                        <p class="font-body-md text-body-md text-on-primary">${input.value}</p>
+                        <span class="block mt-xs font-label-md text-label-md text-on-primary-container opacity-80 text-right">Just now</span>
+                    </div>
+                `;
+                chatContainer.appendChild(userMsg);
+                input.value = "";
+                window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                
+                // Trigger typing indicator mock
+                setTimeout(() => {
+                   const botMsg = document.createElement('div');
+                   botMsg.className = "flex items-start gap-sm max-w-[85%] animate-in fade-in slide-in-from-bottom-2 duration-300";
+                   botMsg.innerHTML = `
+                        <div class="mt-1 w-8 h-8 rounded-full bg-secondary-container flex items-center justify-center flex-shrink-0">
+                            <span class="material-symbols-outlined text-secondary text-lg" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+                        </div>
+                        <div class="bg-surface-container-lowest border border-outline-variant p-md rounded-2xl rounded-tl-none shadow-[0px_4px_20px_rgba(0,0,0,0.04)]">
+                            <p class="font-body-md text-body-md text-on-surface">I'm processing that information for you. Give me a moment to look into your health history.</p>
+                            <span class="block mt-xs font-label-md text-label-md text-on-surface-variant opacity-60">Just now</span>
+                        </div>
+                   `;
+                   chatContainer.appendChild(botMsg);
+                   window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                }, 1000);
+            }
+        });
+
+        // Click on chip to populate input
+        document.querySelectorAll('button.whitespace-nowrap').forEach(chip => {
+            chip.addEventListener('click', () => {
+                input.value = chip.innerText.trim().replace(/^.+?\s/, ''); // Remove icon text
+                input.focus();
+            });
+        });
+    </script>
+</body></html>

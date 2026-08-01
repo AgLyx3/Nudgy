@@ -55,8 +55,8 @@ private struct AssistantTurn: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(text)
-                .font(NudgyTheme.Typeface.body())
-                .foregroundStyle(NudgyTheme.Palette.ink)
+                .font(NudgyTheme.Typeface.bodyLarge())
+                .foregroundStyle(NudgyTheme.Palette.onSurface)
                 .lineSpacing(5)
                 .fixedSize(horizontal: false, vertical: true)
 
@@ -69,11 +69,11 @@ private struct AssistantTurn: View {
                             .font(.system(size: 8))
                         Text(badge)
                     }
-                    .font(NudgyTheme.Typeface.micro())
+                    .font(NudgyTheme.Typeface.labelSmall())
                     .foregroundStyle(
                         source == .gemmaOnDevice
-                            ? NudgyTheme.Palette.trust
-                            : NudgyTheme.Palette.inkTertiary
+                            ? NudgyTheme.Palette.primary
+                            : NudgyTheme.Palette.onSurfaceMuted
                     )
                 }
 
@@ -82,7 +82,7 @@ private struct AssistantTurn: View {
                 } label: {
                     Image(systemName: "speaker.wave.2")
                         .font(.system(size: 10))
-                        .foregroundStyle(NudgyTheme.Palette.inkTertiary)
+                        .foregroundStyle(NudgyTheme.Palette.onSurfaceMuted)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Read this aloud")
@@ -103,19 +103,19 @@ private struct UserTurn: View {
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
             Rectangle()
-                .fill(NudgyTheme.Palette.accent.opacity(0.35))
+                .fill(NudgyTheme.Palette.tertiary.opacity(0.35))
                 .frame(width: 2)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(text)
-                    .font(NudgyTheme.Typeface.body())
-                    .foregroundStyle(NudgyTheme.Palette.inkSecondary)
+                    .font(NudgyTheme.Typeface.bodyLarge())
+                    .foregroundStyle(NudgyTheme.Palette.onSurfaceVariant)
                     .fixedSize(horizontal: false, vertical: true)
 
                 if wasSpoken {
                     Label("Transcribed on this device", systemImage: "waveform")
-                        .font(NudgyTheme.Typeface.micro())
-                        .foregroundStyle(NudgyTheme.Palette.inkTertiary)
+                        .font(NudgyTheme.Typeface.labelSmall())
+                        .foregroundStyle(NudgyTheme.Palette.onSurfaceMuted)
                 }
             }
         }
@@ -136,19 +136,19 @@ private struct HeardCard: View {
         HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("I HEARD")
-                    .font(NudgyTheme.Typeface.micro())
+                    .font(NudgyTheme.Typeface.labelSmall())
                     .kerning(0.8)
-                    .foregroundStyle(NudgyTheme.Palette.inkTertiary)
+                    .foregroundStyle(NudgyTheme.Palette.onSurfaceMuted)
 
                 Text(summary)
-                    .font(NudgyTheme.Typeface.label())
-                    .foregroundStyle(NudgyTheme.Palette.ink)
+                    .font(NudgyTheme.Typeface.bodyMedium().weight(.medium))
+                    .foregroundStyle(NudgyTheme.Palette.onSurface)
                     .fixedSize(horizontal: false, vertical: true)
 
                 if let detail {
                     Text(detail)
-                        .font(NudgyTheme.Typeface.ui())
-                        .foregroundStyle(NudgyTheme.Palette.inkSecondary)
+                        .font(NudgyTheme.Typeface.bodyMedium())
+                        .foregroundStyle(NudgyTheme.Palette.onSurfaceVariant)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -156,10 +156,10 @@ private struct HeardCard: View {
             Spacer(minLength: 0)
         }
         .padding(14)
-        .background(NudgyTheme.Palette.surfaceSunken, in: RoundedRectangle(cornerRadius: 14))
+        .background(NudgyTheme.Palette.surfaceLow, in: RoundedRectangle(cornerRadius: 14))
         .overlay(alignment: .leading) {
             Rectangle()
-                .fill(NudgyTheme.Palette.trust.opacity(0.5))
+                .fill(NudgyTheme.Palette.primary.opacity(0.5))
                 .frame(width: 3)
                 .clipShape(RoundedRectangle(cornerRadius: 2))
         }
@@ -188,25 +188,25 @@ private struct ScheduledCard: View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 17))
-                .foregroundStyle(NudgyTheme.Palette.trust)
+                .foregroundStyle(NudgyTheme.Palette.primary)
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(reminder.title)
-                    .font(NudgyTheme.Typeface.label())
-                    .foregroundStyle(NudgyTheme.Palette.ink)
+                    .font(NudgyTheme.Typeface.bodyMedium().weight(.medium))
+                    .foregroundStyle(NudgyTheme.Palette.onSurface)
 
                 Text(timeList.isEmpty
                      ? "Saved to your list."
                      : "Reminding you at \(timeList), on this phone.")
-                    .font(NudgyTheme.Typeface.ui())
-                    .foregroundStyle(NudgyTheme.Palette.inkSecondary)
+                    .font(NudgyTheme.Typeface.bodyMedium())
+                    .foregroundStyle(NudgyTheme.Palette.onSurfaceVariant)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
             Spacer(minLength: 0)
         }
         .padding(14)
-        .background(NudgyTheme.Palette.trustSoft, in: RoundedRectangle(cornerRadius: 14))
+        .background(NudgyTheme.Palette.secondaryContainer, in: RoundedRectangle(cornerRadius: 14))
     }
 }
 
@@ -222,49 +222,49 @@ private struct PhotoDraftCard: View {
     let draft: PhotoDraft
 
     var body: some View {
-        VStack(alignment: .leading, spacing: NudgyTheme.Metric.stackGap) {
+        VStack(alignment: .leading, spacing: NudgyTheme.Metric.md) {
             HStack {
                 Text("DRAFT FROM PHOTO")
-                    .font(NudgyTheme.Typeface.micro())
+                    .font(NudgyTheme.Typeface.labelSmall())
                     .kerning(0.8)
-                    .foregroundStyle(NudgyTheme.Palette.inkTertiary)
+                    .foregroundStyle(NudgyTheme.Palette.onSurfaceMuted)
                 Spacer()
                 Text("Demo")
-                    .font(NudgyTheme.Typeface.micro())
+                    .font(NudgyTheme.Typeface.labelSmall())
                     .foregroundStyle(NudgyTheme.Palette.concern)
                     .padding(.horizontal, 7)
                     .padding(.vertical, 3)
-                    .background(NudgyTheme.Palette.concernSoft, in: Capsule())
+                    .background(NudgyTheme.Palette.concernContainer, in: Capsule())
             }
 
             Text(draft.medicationName)
-                .font(NudgyTheme.Typeface.cardTitle())
-                .foregroundStyle(NudgyTheme.Palette.ink)
+                .font(NudgyTheme.Typeface.titleLarge())
+                .foregroundStyle(NudgyTheme.Palette.onSurface)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text("INSTRUCTION FOUND")
-                    .font(NudgyTheme.Typeface.micro())
-                    .foregroundStyle(NudgyTheme.Palette.inkTertiary)
+                    .font(NudgyTheme.Typeface.labelSmall())
+                    .foregroundStyle(NudgyTheme.Palette.onSurfaceMuted)
                 Text(draft.instructionFound)
                     .font(NudgyTheme.Typeface.verbatim())
-                    .foregroundStyle(NudgyTheme.Palette.ink)
+                    .foregroundStyle(NudgyTheme.Palette.onSurface)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(12)
-            .background(NudgyTheme.Palette.surfaceSunken, in: RoundedRectangle(cornerRadius: 12))
+            .background(NudgyTheme.Palette.surfaceLow, in: RoundedRectangle(cornerRadius: 12))
 
             Text("This is sample text, not a reading of your bottle. Nudgy does not extract "
                  + "medication details from photos in this version. To set a reminder, enter the "
                  + "details yourself and review them.")
-                .font(NudgyTheme.Typeface.ui())
-                .foregroundStyle(NudgyTheme.Palette.inkSecondary)
+                .font(NudgyTheme.Typeface.bodyMedium())
+                .foregroundStyle(NudgyTheme.Palette.onSurfaceVariant)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(NudgyTheme.Metric.gutter)
-        .background(NudgyTheme.Palette.surface, in: RoundedRectangle(cornerRadius: NudgyTheme.Metric.cardRadius))
+        .padding(NudgyTheme.Metric.containerMargin)
+        .background(NudgyTheme.Palette.surface, in: RoundedRectangle(cornerRadius: NudgyTheme.Metric.radiusLarge))
         .overlay {
-            RoundedRectangle(cornerRadius: NudgyTheme.Metric.cardRadius)
+            RoundedRectangle(cornerRadius: NudgyTheme.Metric.radiusLarge)
                 .stroke(NudgyTheme.Palette.concern.opacity(0.3), style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
         }
     }
@@ -281,8 +281,8 @@ private struct NoteRow: View {
                 .fill(NudgyTheme.Palette.hairline)
                 .frame(height: 1)
             Text(text)
-                .font(NudgyTheme.Typeface.micro())
-                .foregroundStyle(NudgyTheme.Palette.inkTertiary)
+                .font(NudgyTheme.Typeface.labelSmall())
+                .foregroundStyle(NudgyTheme.Palette.onSurfaceMuted)
                 .layoutPriority(1)
             Rectangle()
                 .fill(NudgyTheme.Palette.hairline)

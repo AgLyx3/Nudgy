@@ -11,14 +11,7 @@ struct ConversationScreen: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            VStack(spacing: 12) {
-                ConversationHeader(status: session.status) {
-                    showPrivacySheet = true
-                }
-                StatusStrip(status: session.status)
-            }
-            .padding(.horizontal, NudgyTheme.Metric.gutter)
-            .padding(.bottom, 12)
+            NudgyHeader { showPrivacySheet = true }
 
             timeline
 
@@ -29,7 +22,7 @@ struct ConversationScreen: View {
                 onAddFromPhoto: { session.showPhotoDraft() }
             )
         }
-        .background(NudgyTheme.Palette.canvas.ignoresSafeArea())
+        .background(NudgyTheme.Palette.background.ignoresSafeArea())
         .sheet(isPresented: $showPrivacySheet) {
             PrivacySheet(status: session.status, provider: session.languageProvider)
         }
@@ -38,7 +31,7 @@ struct ConversationScreen: View {
     private var timeline: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: NudgyTheme.Metric.stackGap + 4) {
+                LazyVStack(alignment: .leading, spacing: NudgyTheme.Metric.md + 4) {
                     ForEach(session.timeline) { entry in
                         TimelineEntryView(
                             entry: entry,
@@ -61,7 +54,7 @@ struct ConversationScreen: View {
 
                     Color.clear.frame(height: 8).id("bottom")
                 }
-                .padding(.horizontal, NudgyTheme.Metric.gutter)
+                .padding(.horizontal, NudgyTheme.Metric.containerMargin)
                 .padding(.top, 4)
             }
             .onChange(of: session.timeline.count) { _, _ in
@@ -81,7 +74,7 @@ private struct ThinkingRow: View {
     var body: some View {
         HStack(spacing: 8) {
             Circle()
-                .fill(NudgyTheme.Palette.trust)
+                .fill(NudgyTheme.Palette.primary)
                 .frame(width: 6, height: 6)
                 .opacity(isDim ? 0.25 : 1)
                 .animation(
@@ -90,8 +83,8 @@ private struct ThinkingRow: View {
                 )
 
             Text(label)
-                .font(NudgyTheme.Typeface.micro())
-                .foregroundStyle(NudgyTheme.Palette.inkTertiary)
+                .font(NudgyTheme.Typeface.labelSmall())
+                .foregroundStyle(NudgyTheme.Palette.onSurfaceMuted)
         }
         .onAppear { isDim = true }
     }
@@ -101,7 +94,7 @@ private struct ThinkingRow: View {
 ///
 /// The point of this sheet is that every claim on it is derived from live state — including the
 /// unflattering ones. If Gemma is not actually running, this is where it says so.
-private struct PrivacySheet: View {
+struct PrivacySheet: View {
     let status: SessionStatus
     @ObservedObject var provider: LanguageModelProvider
     @Environment(\.dismiss) private var dismiss
@@ -109,7 +102,7 @@ private struct PrivacySheet: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: NudgyTheme.Metric.stackGap) {
+                VStack(alignment: .leading, spacing: NudgyTheme.Metric.md) {
                     claim(
                         icon: "lock.doc",
                         title: "Your records are encrypted here",
@@ -144,9 +137,9 @@ private struct PrivacySheet: View {
                         safetySection
                     }
                 }
-                .padding(NudgyTheme.Metric.gutter)
+                .padding(NudgyTheme.Metric.containerMargin)
             }
-            .background(NudgyTheme.Palette.canvas)
+            .background(NudgyTheme.Palette.background)
             .navigationTitle("Privacy")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -162,39 +155,39 @@ private struct PrivacySheet: View {
     private var safetySection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("SAFETY INTERVENTIONS")
-                .font(NudgyTheme.Typeface.micro())
+                .font(NudgyTheme.Typeface.labelSmall())
                 .kerning(0.6)
-                .foregroundStyle(NudgyTheme.Palette.inkTertiary)
+                .foregroundStyle(NudgyTheme.Palette.onSurfaceMuted)
 
             Text("\(provider.safetyEvents.count) time(s) this session, Nudgy replaced the model's "
                  + "wording with fixed text because it did not meet the safety rules. No health "
                  + "details are recorded here.")
-                .font(NudgyTheme.Typeface.ui())
-                .foregroundStyle(NudgyTheme.Palette.inkSecondary)
+                .font(NudgyTheme.Typeface.bodyMedium())
+                .foregroundStyle(NudgyTheme.Palette.onSurfaceVariant)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(NudgyTheme.Palette.concernSoft, in: RoundedRectangle(cornerRadius: 12))
+        .background(NudgyTheme.Palette.concernContainer, in: RoundedRectangle(cornerRadius: 12))
     }
 
     private func claim(icon: String, title: String, detail: String) -> some View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: icon)
                 .font(.system(size: 15))
-                .foregroundStyle(NudgyTheme.Palette.trust)
+                .foregroundStyle(NudgyTheme.Palette.primary)
                 .frame(width: 22)
                 .padding(.top, 2)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
-                    .font(NudgyTheme.Typeface.label())
-                    .foregroundStyle(NudgyTheme.Palette.ink)
+                    .font(NudgyTheme.Typeface.bodyMedium().weight(.medium))
+                    .foregroundStyle(NudgyTheme.Palette.onSurface)
                     .fixedSize(horizontal: false, vertical: true)
 
                 Text(detail)
-                    .font(NudgyTheme.Typeface.ui())
-                    .foregroundStyle(NudgyTheme.Palette.inkSecondary)
+                    .font(NudgyTheme.Typeface.bodyMedium())
+                    .foregroundStyle(NudgyTheme.Palette.onSurfaceVariant)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }

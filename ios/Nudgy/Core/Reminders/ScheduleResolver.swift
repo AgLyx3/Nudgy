@@ -174,13 +174,25 @@ struct ScheduleResolver {
                 basis = ""
             }
 
+            // The suggested time is pre-filled so a proposal arrives usable rather than as a
+            // chore. Crucially the *provenance* still says this is Nudgy's idea — pre-filling
+            // changes the friction, not the claim. A time the chart actually named would carry
+            // `.fromYourRecord`; these never do, and the card colours and words them differently.
+            let suggestionValue = suggested.map { TimeSuggestion(clockTime: $0, basis: basis) }
+            let prefilled: DateComponents? = {
+                if case .fromYourRecord = provenance { return nil }
+                return suggested
+            }()
+
             slots.append(
                 ProposedSlot(
                     id: "\(idPrefix)#slot\(index)",
-                    timeOfDay: nil,
-                    provenance: provenance,
+                    timeOfDay: prefilled,
+                    provenance: prefilled != nil
+                        ? .convenienceSuggestion(basis: basis)
+                        : provenance,
                     label: label,
-                    suggestion: suggested.map { TimeSuggestion(clockTime: $0, basis: basis) }
+                    suggestion: suggestionValue
                 )
             )
         }

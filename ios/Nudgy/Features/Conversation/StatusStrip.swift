@@ -15,12 +15,12 @@ struct ConversationHeader: View {
         HStack(alignment: .center) {
             VStack(alignment: .leading, spacing: 1) {
                 Text("Private conversation")
-                    .font(NudgyTheme.Typeface.micro())
+                    .font(NudgyTheme.Typeface.labelSmall())
                     .kerning(0.7)
-                    .foregroundStyle(NudgyTheme.Palette.inkTertiary)
+                    .foregroundStyle(NudgyTheme.Palette.onSurfaceMuted)
                 Text("Nudgy")
-                    .font(NudgyTheme.Typeface.title())
-                    .foregroundStyle(NudgyTheme.Palette.ink)
+                    .font(NudgyTheme.Typeface.headlineMedium())
+                    .foregroundStyle(NudgyTheme.Palette.onSurface)
             }
 
             Spacer()
@@ -29,16 +29,16 @@ struct ConversationHeader: View {
                 HStack(spacing: 6) {
                     Circle()
                         .fill(status.modelIsOnDevice
-                              ? NudgyTheme.Palette.trust
+                              ? NudgyTheme.Palette.primary
                               : NudgyTheme.Palette.concern)
                         .frame(width: 7, height: 7)
                     Text(status.modelIsOnDevice ? "On device" : "Check status")
-                        .font(NudgyTheme.Typeface.label())
+                        .font(NudgyTheme.Typeface.bodyMedium().weight(.medium))
                 }
-                .foregroundStyle(NudgyTheme.Palette.trust)
+                .foregroundStyle(NudgyTheme.Palette.primary)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
-                .background(NudgyTheme.Palette.trustSoft, in: Capsule())
+                .background(NudgyTheme.Palette.secondaryContainer, in: Capsule())
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Privacy and on-device status")
@@ -56,14 +56,14 @@ struct StatusStrip: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            cell(label: "Storage", value: status.storageDescription, tint: NudgyTheme.Palette.ink)
+            cell(label: "Storage", value: status.storageDescription, tint: NudgyTheme.Palette.onSurface)
             divider
-            cell(label: "Model", value: status.modelDescription, tint: NudgyTheme.Palette.ink)
+            cell(label: "Model", value: status.modelDescription, tint: NudgyTheme.Palette.onSurface)
             divider
             cell(
                 label: "Network",
                 value: status.networkEgressDescription,
-                tint: NudgyTheme.Palette.trust
+                tint: NudgyTheme.Palette.primary
             )
         }
         .padding(.vertical, 10)
@@ -84,12 +84,12 @@ struct StatusStrip: View {
     private func cell(label: String, value: String, tint: Color) -> some View {
         VStack(spacing: 3) {
             Text(label.uppercased())
-                .font(NudgyTheme.Typeface.micro())
+                .font(NudgyTheme.Typeface.labelSmall())
                 .kerning(0.5)
-                .foregroundStyle(NudgyTheme.Palette.inkTertiary)
+                .foregroundStyle(NudgyTheme.Palette.onSurfaceMuted)
 
             Text(value)
-                .font(NudgyTheme.Typeface.label())
+                .font(NudgyTheme.Typeface.bodyMedium().weight(.medium))
                 .foregroundStyle(tint)
                 .lineLimit(2)
                 .multilineTextAlignment(.center)

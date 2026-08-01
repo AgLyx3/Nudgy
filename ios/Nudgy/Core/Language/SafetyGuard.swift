@@ -261,6 +261,9 @@ enum SafetyGuard {
         for sentence in sentences {
             let phrase = phraseForm(of: sentence)
             if isNegatedRecordStatement(phrase) { continue }
+            // An anchor offered as Nudgy's own idea is permitted; an anchor asserted as something
+            // the chart said is not. See `isNudgyOffer` for why this distinction is the whole rule.
+            if isNudgyOffer(phrase) { continue }
             let anchors = timeAnchors(in: phrase)
             for anchor in anchors.sorted() where !allowed.timeAnchors.contains(anchor) {
                 return .rejected(.ungroundedTimeAnchor, evidence: anchor)
@@ -397,9 +400,41 @@ enum SafetyGuard {
         let negations = [
             " does not say", " do not say", " did not say", " does not mention", " does not list",
             " is not in the record", " not in your record", " nothing about", " no mention of",
-            " does not include", " does not tell", " is not written", " not stated"
+            " does not include", " does not tell", " is not written", " not stated",
+            " does not name", " do not name", " never says"
         ]
         for negation in negations where phrase.contains(negation) { return true }
+        return false
+    }
+
+    /// True when the sentence offers something as Nudgy's own idea rather than asserting it as a
+    /// fact from the record.
+    ///
+    /// This exists because the design doc's own sanctioned copy was being rejected:
+    ///
+    /// > "Would you like me to remind you around breakfast and dinner?"
+    /// > "Mornings look open in your calendar, so I can remind you then if that matches your routine."
+    ///
+    /// Both name a time anchor the chart never stated — which is exactly the point. Nudgy is
+    /// *allowed* to propose convenient windows so long as it is transparent that they are its own
+    /// suggestion, and the doc explicitly contrasts this with the forbidden "You should take this
+    /// medication in the morning."
+    ///
+    /// So the anchor rule turns on **attribution, not vocabulary**. Claiming the record said
+    /// "breakfast" stays a rejection; offering breakfast as a suggestion does not. Note this
+    /// deliberately does not relax `ungroundedClockTime`, `ungroundedNumber` or
+    /// `ungroundedQuantity` — a specific clock time or dose is structural data the UI already owns,
+    /// and the model has no business inventing one under any framing.
+    static func isNudgyOffer(_ phrase: String) -> Bool {
+        let offers = [
+            " i can ", " i could ", " i can.", " i'd suggest", " i would suggest",
+            " would you like", " want me to", " shall i ", " do you want",
+            " if that matches", " if that suits", " if that works", " if you like",
+            " my suggestion", " i suggest", " happy to", " i'm suggesting"
+        ]
+        // Padded so " i can " matches at the start of a sentence too.
+        let padded = " \(phrase) "
+        for offer in offers where padded.contains(offer) { return true }
         return false
     }
 
