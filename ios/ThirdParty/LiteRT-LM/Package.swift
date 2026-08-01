@@ -29,23 +29,28 @@ let package = Package(
   ],
   targets: [
     // The Prebuilt Binary Target for iOS
+    //
+    // LOCAL CHANGE: the checksum below is NOT the one on the v0.14.0 tag. Google re-uploaded this
+    // release asset without retagging, so the tag's recorded checksum (4a4bdb0e…) no longer matches
+    // the bytes the URL serves and resolution fails outright. The value used here is the one
+    // upstream itself now publishes on `main` for this same URL, and it matches what SwiftPM
+    // computes from the downloaded file — two independent sources agreeing, not just "whatever
+    // arrived". See ../README.md.
     .binaryTarget(
       name: "CLiteRTLM",
       url: "https://github.com/google-ai-edge/LiteRT-LM/releases/download/v0.14.0/CLiteRTLM.xcframework.zip",
-      checksum: "4a4bdb0e89689ceacc54c2fb7ae0efe8f5dad2404110976a29c3bf6b374a511e"
+      checksum: "dddac2f6713ed65eaf01c18e115d9fec22184adf575cc7856a21387e8ba937e1"
     ),
-    // The Prebuilt Binary Target for Mac
-    .binaryTarget(
-      name: "CLiteRTLM_mac",
-      url: "https://github.com/google-ai-edge/LiteRT-LM/releases/download/v0.14.0/CLiteRTLM_mac.xcframework.zip",
-      checksum: "13e818c9d3987afa87f0716884ebf0b6b10677b480717b8b098146e6b4f45847"
-    ),
+    // LOCAL CHANGE: upstream also declares a `CLiteRTLM_mac` binaryTarget here (44.6 MB) for the
+    // macOS slice. Nudgy is an iOS-only app, so it is removed — SwiftPM downloads every declared
+    // binaryTarget at resolve time regardless of its platform condition, and on a slow connection
+    // that is minutes spent on a framework nothing links against. Restore it from the v0.14.0 tag
+    // if a macOS target is ever added. See ../README.md.
     // The Swift Wrapper Target
     .target(
       name: "LiteRTLM",
       dependencies: [
-        .target(name: "CLiteRTLM", condition: .when(platforms: [.iOS])),
-        .target(name: "CLiteRTLM_mac", condition: .when(platforms: [.macOS]))
+        .target(name: "CLiteRTLM", condition: .when(platforms: [.iOS]))
       ],
       path: "swift",
       exclude: [

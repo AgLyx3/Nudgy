@@ -70,6 +70,13 @@ struct ProposalCard: View {
         return "No time yet"
     }
 
+    /// Every time on one line, for the collapsed state.
+    private var collapsedTimesSummary: String {
+        let times = workingSlots.compactMap { $0.timeOfDay.map(Self.format) }
+        guard !times.isEmpty else { return "No times set yet" }
+        return times.joined(separator: " · ")
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: NudgyTheme.Metric.md) {
             header
@@ -84,6 +91,12 @@ struct ProposalCard: View {
                     .font(NudgyTheme.Typeface.bodyMedium())
                     .foregroundStyle(NudgyTheme.Palette.onSurfaceVariant)
                     .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if !isExpanded, workingSlots.count > 1 {
+                Text(collapsedTimesSummary)
+                    .font(NudgyTheme.Typeface.bodyMedium())
+                    .foregroundStyle(NudgyTheme.Palette.onSurfaceMuted)
             }
 
             // A possible concern is the reason a human is needed here, so it never collapses.
@@ -106,25 +119,28 @@ struct ProposalCard: View {
 
     private var header: some View {
         HStack(alignment: .center, spacing: NudgyTheme.Metric.xs) {
-            Text(headlineTime)
-                .font(NudgyTheme.Typeface.displayLarge())
-                .foregroundStyle(
-                    // Sage only when the chart named the time. Nudgy's own picks stay muted.
-                    state == .proposed || state == .onlyWhenNeeded
-                        ? NudgyTheme.Palette.primary
-                        : NudgyTheme.Palette.onSurfaceMuted
-                )
-                .lineLimit(1)
-                .minimumScaleFactor(0.6)
-
             Button {
                 withAnimation(.easeInOut(duration: 0.22)) { isExpanded.toggle() }
             } label: {
-                Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(NudgyTheme.Palette.onSurfaceVariant)
+                HStack(spacing: NudgyTheme.Metric.xs) {
+                    Text(headlineTime)
+                        .font(NudgyTheme.Typeface.displayLarge())
+                        .foregroundStyle(
+                            // Sage only when the chart named the time. Nudgy's own picks stay muted.
+                            state == .proposed || state == .onlyWhenNeeded
+                                ? NudgyTheme.Palette.primary
+                                : NudgyTheme.Palette.onSurfaceMuted
+                        )
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
+
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(NudgyTheme.Palette.onSurfaceVariant)
+                }
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(isExpanded ? "Hide details" : "Show times and details")
 
             Spacer(minLength: NudgyTheme.Metric.xs)
 
@@ -339,9 +355,11 @@ struct ProposalCard: View {
                 .disabled(!canApprove)
                 .opacity(canApprove ? 1 : 0.4)
 
-                Button("Edit") { onEdit(proposal) }
-                    .buttonStyle(OutlineButtonStyle())
-                    .frame(maxWidth: .infinity)
+                Button(isExpanded ? "Done" : "Edit times") {
+                    withAnimation(.easeInOut(duration: 0.22)) { isExpanded.toggle() }
+                }
+                .buttonStyle(OutlineButtonStyle())
+                .frame(maxWidth: .infinity)
 
                 // Skipping is a normal choice, not a failure, so it stays muted rather than the
                 // mockup's error red — red is reserved for things that actually went wrong.
