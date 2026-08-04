@@ -21,7 +21,9 @@
           {
             "use": "official",
             "family": "Reyes",
-            "given": ["Maya"]
+            "given": [
+              "Maya"
+            ]
           }
         ],
         "gender": "female",
@@ -183,7 +185,9 @@
                 "frequency": 1,
                 "period": 1.0,
                 "periodUnit": "d",
-                "when": ["ACM"]
+                "when": [
+                  "ACM"
+                ]
               }
             },
             "asNeededBoolean": false,
@@ -362,7 +366,9 @@
           ]
         },
         "type": "allergy",
-        "category": ["medication"],
+        "category": [
+          "medication"
+        ],
         "criticality": "high",
         "code": {
           "text": "Penicillin G"
@@ -405,6 +411,100 @@
               "display": "Columbia Rehabilitation Medicine"
             },
             "status": "accepted"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:1f1c9f10-0000-4000-8000-00000000004a",
+      "resource": {
+        "resourceType": "NutritionOrder",
+        "id": "1f1c9f10-0000-4000-8000-00000000004a",
+        "status": "active",
+        "intent": "order",
+        "patient": {
+          "reference": "urn:uuid:1f1c9f10-0000-4000-8000-000000000001"
+        },
+        "dateTime": "2026-05-14T09:25:00-04:00",
+        "orderer": {
+          "display": "Columbia Primary Care"
+        },
+        "oralDiet": {
+          "type": [
+            {
+              "coding": [
+                {
+                  "system": "http://snomed.info/sct",
+                  "code": "160670007",
+                  "display": "Diabetic diet"
+                }
+              ],
+              "text": "Diabetic diet"
+            }
+          ],
+          "schedule": [
+            {
+              "repeat": {
+                "frequency": 3,
+                "period": 1.0,
+                "periodUnit": "d",
+                "when": [
+                  "CM",
+                  "CD",
+                  "CV"
+                ]
+              }
+            }
+          ],
+          "instruction": "Consistent carbohydrate portions at each meal, as discussed with the dietitian."
+        },
+        "excludeFoodModifier": [
+          {
+            "text": "Grapefruit and grapefruit juice"
+          },
+          {
+            "text": "Sugar-sweetened beverages"
+          }
+        ],
+        "note": [
+          {
+            "text": "Reviewed with patient at the 14 May visit."
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:1f1c9f10-0000-4000-8000-00000000005a",
+      "resource": {
+        "resourceType": "AllergyIntolerance",
+        "id": "1f1c9f10-0000-4000-8000-00000000005a",
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
+              "code": "active"
+            }
+          ]
+        },
+        "type": "allergy",
+        "category": [
+          "food"
+        ],
+        "criticality": "high",
+        "code": {
+          "text": "Peanut"
+        },
+        "patient": {
+          "reference": "urn:uuid:1f1c9f10-0000-4000-8000-000000000001"
+        },
+        "reaction": [
+          {
+            "manifestation": [
+              {
+                "text": "Anaphylaxis"
+              }
+            ],
+            "severity": "severe"
           }
         ]
       }

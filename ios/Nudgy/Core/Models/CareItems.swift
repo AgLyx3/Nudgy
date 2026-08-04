@@ -140,14 +140,69 @@ struct TherapyTask: Codable, Hashable, Identifiable {
     let detailGaps: [ReviewReason]
 }
 
+/// Something the record says about food.
+///
+/// Strictly a restatement. Nudgy surfaces a prescribed diet, foods an order excludes, and food
+/// allergies — it never composes a meal, recommends a nutrient, or infers a restriction. The
+/// mockup's "High Protein Lunch, source: AI Personalized Plan" is precisely what this type exists
+/// to make impossible: every field here needs a citation.
+struct DietaryGuidance: Codable, Hashable, Identifiable {
+    enum Kind: String, Codable, Hashable {
+        /// A named diet from a care plan or nutrition order, e.g. "Diabetic diet".
+        case prescribedDiet
+        /// A food the record explicitly says to avoid.
+        case avoid
+        /// A recorded food allergy or intolerance.
+        case allergy
+    }
+
+    let id: String
+    let kind: Kind
+    /// Verbatim, exactly as the record wrote it.
+    let displayText: String
+    let citation: SourceCitation
+    /// Free-text instruction where the record supplies one.
+    let instructionText: String?
+    /// Meals this applies to, when the record ties it to one.
+    let mealAnchors: [MealAnchor]
+    let planTitle: String?
+    let sourceLabel: String
+    let dataOrigin: DataOrigin
+}
+
+enum MealAnchor: String, Codable, Hashable, CaseIterable {
+    case breakfast, lunch, dinner
+
+    var title: String {
+        switch self {
+        case .breakfast: return "Breakfast"
+        case .lunch: return "Lunch"
+        case .dinner: return "Dinner"
+        }
+    }
+
+    /// Nudgy's own default clock time for the meal. A scheduling convenience with no clinical
+    /// meaning — the record almost never states when someone eats.
+    var defaultTime: DateComponents {
+        switch self {
+        case .breakfast: return DateComponents(hour: 8, minute: 0)
+        case .lunch: return DateComponents(hour: 12, minute: 30)
+        case .dinner: return DateComponents(hour: 18, minute: 30)
+        }
+    }
+}
+
 /// Everything Nudgy has normalized out of the connected sources.
 struct CareRecordSnapshot: Codable, Hashable {
     var patientDisplayName: String?
     var medications: [MedicationItem] = []
     var therapyTasks: [TherapyTask] = []
+    var dietaryGuidance: [DietaryGuidance] = []
     var allergies: [String] = []
     var importedAt: Date = .init()
     var sourceLabels: [String] = []
 
-    var isEmpty: Bool { medications.isEmpty && therapyTasks.isEmpty }
+    var isEmpty: Bool {
+        medications.isEmpty && therapyTasks.isEmpty && dietaryGuidance.isEmpty
+    }
 }

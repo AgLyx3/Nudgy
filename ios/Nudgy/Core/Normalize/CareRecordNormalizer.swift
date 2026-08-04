@@ -30,13 +30,16 @@ struct ImportedSource: Hashable {
 struct CareRecordNormalizer {
     private let dosageParser: DosageInstructionParser
     private let therapyParser: TherapyTaskParser
+    private let dietParser: DietGuidanceParser
 
     init(
         dosageParser: DosageInstructionParser = DosageInstructionParser(),
-        therapyParser: TherapyTaskParser = TherapyTaskParser()
+        therapyParser: TherapyTaskParser = TherapyTaskParser(),
+        dietParser: DietGuidanceParser = DietGuidanceParser()
     ) {
         self.dosageParser = dosageParser
         self.therapyParser = therapyParser
+        self.dietParser = dietParser
     }
 
     // MARK: - Entry points
@@ -48,6 +51,7 @@ struct CareRecordNormalizer {
         var medications: [MedicationItem] = []
         var therapyTasks: [TherapyTask] = []
         var allergies: [String] = []
+        var dietaryGuidance: [DietaryGuidance] = []
         var patientName: String?
 
         for source in imports {
@@ -76,11 +80,39 @@ struct CareRecordNormalizer {
                             dataOrigin: descriptor.dataOrigin
                         )
                     )
+                    // Diet activities used to fall on the floor here: the therapy parser skips them
+                    // because they are not exercise, and nothing else looked.
+                    dietaryGuidance.append(
+                        contentsOf: dietParser.guidance(
+                            fromCarePlan: plan,
+                            fallbackSourceLabel: descriptor.displayName,
+                            dataOrigin: descriptor.dataOrigin
+                        )
+                    )
+
+                case .nutritionOrder(let order):
+                    dietaryGuidance.append(
+                        contentsOf: dietParser.guidance(
+                            fromNutritionOrder: order,
+                            fallbackSourceLabel: descriptor.displayName,
+                            dataOrigin: descriptor.dataOrigin
+                        )
+                    )
 
                 case .allergyIntolerance(let allergy):
                     guard allergy.isActive,
                           let label = allergy.code?.bestDisplay?.nilIfEmpty else { continue }
                     if !allergies.contains(label) { allergies.append(label) }
+                    // Only food allergies reach a meal card. A drug allergy is important and
+                    // belongs elsewhere; putting it on a dinner card trains people to skim.
+                    if let food = dietParser.guidance(
+                        fromAllergy: allergy,
+                        categories: allergy.category ?? [],
+                        fallbackSourceLabel: descriptor.displayName,
+                        dataOrigin: descriptor.dataOrigin
+                    ) {
+                        dietaryGuidance.append(food)
+                    }
 
                 case .appointment, .condition, .unsupported:
                     continue
@@ -92,6 +124,7 @@ struct CareRecordNormalizer {
         snapshot.medications = deduplicate(medications)
         snapshot.therapyTasks = deduplicate(therapyTasks)
         snapshot.allergies = allergies
+        snapshot.dietaryGuidance = dietaryGuidance
         snapshot.sourceLabels = orderedUnique(
             snapshot.medications.map(\.sourceLabel) + snapshot.therapyTasks.map(\.sourceLabel)
         )

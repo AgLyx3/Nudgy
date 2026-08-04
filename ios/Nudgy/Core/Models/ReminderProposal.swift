@@ -115,11 +115,14 @@ struct ProposalFlag: Codable, Hashable, Identifiable {
 enum ReminderKind: String, Codable, Hashable {
     case medication
     case therapy
+    /// A meal-time note about what the record says regarding food.
+    case nutrition
 
     var noun: String {
         switch self {
         case .medication: return "medication"
         case .therapy: return "exercise"
+        case .nutrition: return "meal"
         }
     }
 }

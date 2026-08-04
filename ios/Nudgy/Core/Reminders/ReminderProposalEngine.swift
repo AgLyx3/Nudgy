@@ -61,6 +61,10 @@ struct ReminderProposalEngine {
             guard !skippedProposalIDs.contains(id) else { continue }
             drafts.append(therapyDraft(for: task, id: id))
         }
+        for draft in nutritionDrafts(for: snapshot.dietaryGuidance)
+        where !skippedProposalIDs.contains(draft.id) {
+            drafts.append(draft)
+        }
 
         // Clustering only considers what the user will actually be offered.
         let clusters = clusterFlags(for: drafts)
@@ -239,6 +243,91 @@ struct ReminderProposalEngine {
         }
         return facts
     }
+
+    // MARK: - Nutrition proposals
+
+    /// One proposal per meal, gathering everything the record says about food.
+    ///
+    /// Grouped by meal rather than one card per restriction: at dinner someone wants a single
+    /// answer to "is there anything I should know", not four cards. Nothing here is generated —
+    /// every line is a quoted diet, an excluded food, or a recorded allergy, each with a citation.
+    ///
+    /// The title says "what your record says about food" rather than anything resembling "what you
+    /// can eat". An incomplete record read as a complete list is worse than no list at all, which
+    /// is why the info flag states the limit outright instead of burying it.
+    private func nutritionDrafts(for guidance: [DietaryGuidance]) -> [Draft] {
+        guard !guidance.isEmpty else { return [] }
+
+        return MealAnchor.allCases.compactMap { meal -> Draft? in
+            let relevant = guidance.filter { $0.mealAnchors.contains(meal) }
+            guard let first = relevant.first else { return nil }
+
+            let id = "nudgy.proposal.nutrition.\(meal.rawValue)"
+            let facts: [SourceFact] = relevant.map { item in
+                let label: String
+                switch item.kind {
+                case .prescribedDiet: label = "Diet in your plan"
+                case .avoid: label = "Your record says to avoid"
+                case .allergy: label = "Recorded food allergy"
+                }
+                return SourceFact(label: label, verbatim: item.displayText, citation: item.citation)
+            }
+
+            var summaryParts: [String] = []
+            if let diet = relevant.first(where: { $0.kind == .prescribedDiet }) {
+                summaryParts.append(diet.displayText)
+            }
+            let avoid = relevant.filter { $0.kind == .avoid }
+            if !avoid.isEmpty {
+                summaryParts.append("avoid " + avoid.map(\.displayText).joined(separator: ", "))
+            }
+            let allergies = relevant.filter { $0.kind == .allergy }
+            if !allergies.isEmpty {
+                summaryParts.append("allergic to "
+                    + allergies.map(\.displayText).joined(separator: ", "))
+            }
+
+            let slot = ProposedSlot(
+                id: "\(id)#slot0",
+                timeOfDay: meal.defaultTime,
+                provenance: .convenienceSuggestion(
+                    basis: "Nudgy's own default time for \(meal.title.lowercased()). "
+                        + "Your record does not say when you eat."
+                ),
+                label: meal.title,
+                suggestion: TimeSuggestion(
+                    clockTime: meal.defaultTime,
+                    basis: "Nudgy's own default time for \(meal.title.lowercased())."
+                )
+            )
+
+            let flags = [
+                ProposalFlag(
+                    severity: .info,
+                    title: "This is only what has been written down",
+                    detail: "I can show what your records say about food, and nothing else. "
+                        + "If something is missing from them, it will be missing here too.",
+                    citations: relevant.map(\.citation),
+                    suggestedAction: "A dietitian or your care team can go further than I can."
+                )
+            ]
+
+            return Draft(
+                id: id,
+                kind: .nutrition,
+                title: "\(meal.title) — what your record says about food",
+                subtitle: summaryParts.isEmpty ? nil : summaryParts.joined(separator: " · "),
+                facts: facts,
+                slots: [slot],
+                flags: flags,
+                primaryProvenance: .fromYourRecord(first.citation),
+                sourceLabel: first.sourceLabel,
+                dataOrigin: first.dataOrigin,
+                declinedReason: nil
+            )
+        }
+    }
+
 
     // MARK: - Conflict detection (never resolution)
 

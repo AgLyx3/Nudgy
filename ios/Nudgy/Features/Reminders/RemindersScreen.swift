@@ -192,6 +192,7 @@ private struct TimelineRow<Content: View>: View {
         switch kind {
         case .medication: return NudgyTheme.Palette.primary
         case .therapy: return NudgyTheme.Palette.secondaryContainer
+        case .nutrition: return NudgyTheme.Palette.tertiaryContainer
         }
     }
 
@@ -199,6 +200,7 @@ private struct TimelineRow<Content: View>: View {
         switch kind {
         case .medication: return "pills.fill"
         case .therapy: return "figure.cooldown"
+        case .nutrition: return "fork.knife"
         }
     }
 
@@ -212,7 +214,7 @@ private struct TimelineRow<Content: View>: View {
                     .font(.system(size: 19, weight: .medium))
                     .foregroundStyle(kind == .medication
                                      ? NudgyTheme.Palette.onPrimary
-                                     : NudgyTheme.Palette.onSecondaryContainer)
+                                     : NudgyTheme.Palette.primary)
             }
 
             content

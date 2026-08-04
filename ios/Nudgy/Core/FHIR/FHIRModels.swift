@@ -169,6 +169,8 @@ struct FHIRAllergyIntolerance: Decodable, Hashable {
     var clinicalStatus: FHIRCodeableConcept?
     var code: FHIRCodeableConcept?
     var criticality: String?
+    /// "food", "medication", "environment", "biologic". Decides whether this belongs on a meal card.
+    var category: [String]?
 
     var isActive: Bool {
         clinicalStatus?.coding?.contains { $0.code == "active" } ?? false
@@ -181,6 +183,33 @@ struct FHIRAppointment: Decodable, Hashable {
     var description: String?
     var start: Date?
     var comment: String?
+}
+
+/// FHIR `NutritionOrder` — the resource that carries a prescribed diet, including the one field
+/// nothing else has: `excludeFoodModifier`, i.e. foods the order says to avoid.
+struct FHIRNutritionOrder: Decodable, Hashable {
+    struct OralDiet: Decodable, Hashable {
+        var type: [FHIRCodeableConcept]?
+        var schedule: [FHIRTiming]?
+        var instruction: String?
+    }
+
+    var id: String?
+    var status: String?
+    var intent: String?
+    var dateTime: Date?
+    var orderer: FHIRReference?
+    var oralDiet: OralDiet?
+    /// Foods the order excludes. Preserved verbatim — never normalised into a category.
+    var excludeFoodModifier: [FHIRCodeableConcept]?
+    var foodPreferenceModifier: [FHIRCodeableConcept]?
+    var note: [FHIRAnnotation]?
+
+    var isActive: Bool { status == "active" || status == nil }
+}
+
+struct FHIRAnnotation: Decodable, Hashable {
+    var text: String?
 }
 
 struct FHIRCondition: Decodable, Hashable {
@@ -199,6 +228,7 @@ enum FHIRResource: Hashable {
     case allergyIntolerance(FHIRAllergyIntolerance)
     case appointment(FHIRAppointment)
     case condition(FHIRCondition)
+    case nutritionOrder(FHIRNutritionOrder)
     /// A resource type Nudgy does not read. Kept so import counts stay honest.
     case unsupported(type: String)
 
@@ -211,6 +241,7 @@ enum FHIRResource: Hashable {
         case .allergyIntolerance: return "AllergyIntolerance"
         case .appointment: return "Appointment"
         case .condition: return "Condition"
+        case .nutritionOrder: return "NutritionOrder"
         case .unsupported(let type): return type
         }
     }
@@ -241,6 +272,8 @@ extension FHIRResource: Decodable {
             self = .appointment(try FHIRAppointment(from: single))
         case "Condition":
             self = .condition(try FHIRCondition(from: single))
+        case "NutritionOrder":
+            self = .nutritionOrder(try FHIRNutritionOrder(from: single))
         default:
             self = .unsupported(type: type)
         }
