@@ -248,13 +248,45 @@ enum SafetyGuard {
         let allowed = tokens(in: context.corpus)
         let produced = tokens(in: whole)
 
-        for time in produced.clockTimes.sorted() where !allowed.clockTimes.contains(time) {
-            return .rejected(.ungroundedClockTime, evidence: time)
+        // Clock times are judged per sentence, on attribution rather than vocabulary.
+        //
+        // Nudgy is expected to choose reminder times, so "I've set this for 9:30 — your other two
+        // are at 8:00 and I didn't want them stacked" is the product working. What stays forbidden
+        // is "your chart says to take this at 9:30", which is a fabricated prescription. The
+        // difference is who the sentence credits, not whether a number appears in it.
+        for sentence in sentences {
+            let phrase = phraseForm(of: sentence)
+            if attributesToRecord(phrase) {
+                // Credited to the record: every clock time in it must actually be in the record.
+                let inSentence = tokens(in: sentence)
+                for time in inSentence.clockTimes.sorted() where !allowed.clockTimes.contains(time) {
+                    return .rejected(.ungroundedClockTime, evidence: time)
+                }
+                continue
+            }
+            if isNudgyOffer(phrase) || isNegatedRecordStatement(phrase) { continue }
+            let inSentence = tokens(in: sentence)
+            for time in inSentence.clockTimes.sorted() where !allowed.clockTimes.contains(time) {
+                return .rejected(.ungroundedClockTime, evidence: time)
+            }
         }
         for number in produced.numbers.sorted() where !allowed.numbers.contains(number) {
+            // A number bound to a duration unit, in a sentence where Nudgy is describing its own
+            // schedule, is spacing arithmetic rather than a clinical quantity: "I've put these
+            // twelve hours apart" is Nudgy explaining itself. Dose units are untouched, so
+            // "850 mg" is still rejected under any framing — see `ungroundedQuantity`.
+            if isSchedulingDuration(number, in: sentences) { continue }
             return .rejected(.ungroundedNumber, evidence: number)
         }
         for pair in produced.quantities.sorted() where !allowed.quantities.contains(pair) {
+            // Same carve-out as numbers: a quantity whose unit is a duration is Nudgy describing
+            // its own spacing, not a dose. "12 hour" passes here; "850 mg" never does, because mg
+            // is not a duration unit.
+            let unit = pair.split(separator: "|").last.map(String.init) ?? ""
+            let value = pair.split(separator: "|").first.map(String.init) ?? ""
+            if Self.durationUnits.contains(unit), isSchedulingDuration(value, in: sentences) {
+                continue
+            }
             return .rejected(.ungroundedQuantity, evidence: pair.replacingOccurrences(of: "|", with: " "))
         }
 
@@ -263,7 +295,7 @@ enum SafetyGuard {
             if isNegatedRecordStatement(phrase) { continue }
             // An anchor offered as Nudgy's own idea is permitted; an anchor asserted as something
             // the chart said is not. See `isNudgyOffer` for why this distinction is the whole rule.
-            if isNudgyOffer(phrase) { continue }
+            if isNudgyOffer(phrase), !attributesToRecord(phrase) { continue }
             let anchors = timeAnchors(in: phrase)
             for anchor in anchors.sorted() where !allowed.timeAnchors.contains(anchor) {
                 return .rejected(.ungroundedTimeAnchor, evidence: anchor)
@@ -422,15 +454,66 @@ enum SafetyGuard {
     ///
     /// So the anchor rule turns on **attribution, not vocabulary**. Claiming the record said
     /// "breakfast" stays a rejection; offering breakfast as a suggestion does not. Note this
-    /// deliberately does not relax `ungroundedClockTime`, `ungroundedNumber` or
-    /// `ungroundedQuantity` — a specific clock time or dose is structural data the UI already owns,
-    /// and the model has no business inventing one under any framing.
+    /// This gates two rules: ungrounded time *anchors* ("breakfast") and ungrounded *clock times*
+    /// ("9:30"), both of which Nudgy is meant to propose. It deliberately does not relax
+    /// `ungroundedNumber` or `ungroundedQuantity`: a dose is not something the model gets to pick
+    /// under any framing, so "I can remind you to take 850 mg" is still rejected.
+    /// Units that describe an interval rather than an amount of medicine.
+    static let durationUnits: Set<String> = [
+        "hour", "hours", "minute", "minutes", "min", "mins", "day", "days"
+    ]
+
+    /// True when `number` appears only as a duration ("twelve hours apart", "30 minutes later")
+    /// inside sentences where Nudgy is describing the schedule it chose.
+    ///
+    /// Deliberately narrow. It matches the number *immediately followed by a time unit*, and only
+    /// in a sentence that already reads as Nudgy's own statement. A dose never satisfies both.
+    static func isSchedulingDuration(_ number: String, in sentences: [String]) -> Bool {
+        let units = Self.durationUnits
+        for sentence in sentences {
+            let phrase = phraseForm(of: sentence)
+            guard isNudgyOffer(phrase), !attributesToRecord(phrase) else { continue }
+            // The tokeniser normalises "twelve" to "12" but `phraseForm` keeps the word, so match
+            // either surface form against the numeric token being judged.
+            let words = phrase.split(separator: " ").map(String.init)
+            for (index, word) in words.enumerated() {
+                let asDigits = numberWords[word] ?? word
+                guard asDigits == number else { continue }
+                let next = index + 1 < words.count ? words[index + 1] : ""
+                if units.contains(next) { return true }
+            }
+        }
+        return false
+    }
+
+    /// True when the sentence credits the record for something.
+    ///
+    /// This outranks `isNudgyOffer`, because a sentence can wear both hats: "I'll remind you at
+    /// 7:30, which is when your chart says to take it" opens as an offer and closes as a
+    /// fabricated prescription. The offer framing must not buy amnesty for the attribution.
+    static func attributesToRecord(_ phrase: String) -> Bool {
+        let attributions = [
+            " chart says", " chart said", " record says", " record said",
+            " records say", " notes say", " prescription says", " label says",
+            " as prescribed", " your doctor says", " according to your",
+            " that is when your", " which is when your"
+        ]
+        for attribution in attributions where phrase.contains(attribution) { return true }
+        return false
+    }
+
     static func isNudgyOffer(_ phrase: String) -> Bool {
         let offers = [
             " i can ", " i could ", " i can.", " i'd suggest", " i would suggest",
             " would you like", " want me to", " shall i ", " do you want",
             " if that matches", " if that suits", " if that works", " if you like",
-            " my suggestion", " i suggest", " happy to", " i'm suggesting"
+            " my suggestion", " i suggest", " happy to", " i'm suggesting",
+            // Nudgy stating what it has done or will do with the schedule it owns.
+            // NOTE: `phraseForm` expands contractions before matching, so these are written in
+            // expanded form. "I've set" arrives here as "i have set".
+            " i have set", " i have put", " i will remind", " i have spaced",
+            " i have scheduled", " i have moved", " i have picked", " i have chosen",
+            " i picked", " i chose", " i set ", " i put "
         ]
         // Padded so " i can " matches at the start of a sentence too.
         let padded = " \(phrase) "
