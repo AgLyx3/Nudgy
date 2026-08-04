@@ -504,10 +504,14 @@ enum SafetyGuard {
 
     static func isNudgyOffer(_ phrase: String) -> Bool {
         let offers = [
-            " i can ", " i could ", " i can.", " i'd suggest", " i would suggest",
+            // Every entry is written *post*-normalisation: contractions expanded, punctuation
+            // flattened to spaces. An entry containing an apostrophe or a full stop can never
+            // match, and fails open — the sentence is judged rather than skipped. Three such
+            // entries were dead here before this was written down.
+            " i can ", " i could ", " i would suggest", " i am suggesting",
             " would you like", " want me to", " shall i ", " do you want",
             " if that matches", " if that suits", " if that works", " if you like",
-            " my suggestion", " i suggest", " happy to", " i'm suggesting",
+            " my suggestion", " i suggest", " happy to",
             // Nudgy stating what it has done or will do with the schedule it owns.
             // NOTE: `phraseForm` expands contractions before matching, so these are written in
             // expanded form. "I've set" arrives here as "i have set".
@@ -515,6 +519,11 @@ enum SafetyGuard {
             " i have scheduled", " i have moved", " i have picked", " i have chosen",
             " i picked", " i chose", " i set ", " i put "
         ]
+        assert(
+            offers.allSatisfy { !$0.contains("'") && !$0.contains(".") },
+            "Offer phrases are matched after contraction expansion and punctuation flattening. "
+            + "An entry with an apostrophe or full stop can never match and will fail open."
+        )
         // Padded so " i can " matches at the start of a sentence too.
         let padded = " \(phrase) "
         for offer in offers where padded.contains(offer) { return true }
