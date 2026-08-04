@@ -262,6 +262,36 @@ final class LiteRTGemmaModel: NudgyLanguageModel {
         }
     }
 
+    /// Raw completion for structured output — reminder times, not prose.
+    ///
+    /// Deliberately not routed through `GroundedPromptBuilder`: there is no narration here to
+    /// ground, and no sentence for SafetyGuard to read. The caller validates the result against a
+    /// schema instead, and falls back to deterministic spacing if anything is off. Temperature is
+    /// dropped well below the narration setting because this is a constrained-format answer, not
+    /// a piece of writing.
+    func completeRaw(prompt: String) async throws -> String {
+        guard let engine else {
+            throw LanguageModelError.engineInitializationFailed("No engine after prepare().")
+        }
+        await gate.acquire()
+        defer { Task { await self.gate.release() } }
+
+        let sampler = try SamplerConfig(topK: 20, topP: 0.9, temperature: 0.2)
+        let config = ConversationConfig(
+            systemMessage: Message(
+                "You output only what is asked, in exactly the format requested. "
+                + "No commentary, no preamble, no explanation."
+            ),
+            samplerConfig: sampler
+        )
+        do {
+            let conversation = try await engine.createConversation(with: config)
+            return try await conversation.sendMessage(Message(prompt)).toString
+        } catch {
+            throw LanguageModelError.generationFailed(error.localizedDescription)
+        }
+    }
+
     /// A fresh conversation per request, carrying that request's system message.
     ///
     /// Not a long-lived chat session: history is a grounding leak. Turn three must not be able to
