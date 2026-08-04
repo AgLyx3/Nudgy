@@ -11,7 +11,7 @@ struct ConversationScreen: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            NudgyHeader { showPrivacySheet = true }
+            NudgyHeader(status: session.ledger.status) { showPrivacySheet = true }
 
             timeline
 

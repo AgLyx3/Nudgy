@@ -28,7 +28,24 @@ struct RootTabView: View {
 
 /// The header that sits above every tab. Names the app and keeps the privacy state one tap away.
 struct NudgyHeader: View {
+    var status: AdherenceStatus = .current
     var onOpenStatus: () -> Void
+
+    /// Green / amber / red, as a dashboard light rather than a score.
+    ///
+    /// Red here means "several reminders have gone unanswered" — never "you missed three doses".
+    /// We only know what was tapped and what was silence, and silence is ambiguous. It is a prompt
+    /// to look, not a verdict.
+    ///
+    /// Deliberately a small dot rather than a card: card-level concerns stay amber blocks, so the
+    /// two uses of colour never sit side by side competing.
+    private var statusTint: Color {
+        switch status {
+        case .current: return NudgyTheme.Palette.primary
+        case .attention: return NudgyTheme.Palette.concern
+        case .needsLook: return NudgyTheme.Palette.error
+        }
+    }
 
     var body: some View {
         HStack(spacing: NudgyTheme.Metric.sm) {
@@ -48,12 +65,17 @@ struct NudgyHeader: View {
             Spacer()
 
             Button(action: onOpenStatus) {
-                Image(systemName: "shield.lefthalf.filled")
-                    .font(.system(size: 17))
-                    .foregroundStyle(NudgyTheme.Palette.onSurfaceVariant)
+                HStack(spacing: 7) {
+                    Circle()
+                        .fill(statusTint)
+                        .frame(width: 9, height: 9)
+                    Image(systemName: "shield.lefthalf.filled")
+                        .font(.system(size: 17))
+                        .foregroundStyle(NudgyTheme.Palette.onSurfaceVariant)
+                }
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Privacy and on-device status")
+            .accessibilityLabel("\(status.summary). Privacy and on-device status.")
         }
         .padding(.horizontal, NudgyTheme.Metric.containerMargin)
         .padding(.vertical, NudgyTheme.Metric.sm)

@@ -86,6 +86,16 @@ final class NotificationScheduler: ObservableObject {
     /// accusation on a lock screen, and an accusation is a thing people stop tapping.
     static let notThisTimeActionIdentifier = "nudgy.action.notThisTime"
 
+    /// "Change the time" — opens the app on this reminder's time editor.
+    static let changeTimeActionIdentifier = "nudgy.action.changeTime"
+
+    /// "Stop reminding me" — deactivates immediately, undoable in the app.
+    ///
+    /// Deliberately separate from "Not this time". They look similar and mean opposite things:
+    /// one is *fix this*, the other is *end this*. Collapsing them would destroy the most
+    /// actionable signal there is.
+    static let stopRemindingActionIdentifier = "nudgy.action.stopReminding"
+
     /// How long `snoozeActionIdentifier` defers by. Named so the app layer and the UI copy cannot
     /// drift apart.
     static let snoozeInterval: TimeInterval = 15 * 60
@@ -145,9 +155,19 @@ final class NotificationScheduler: ObservableObject {
             title: "Not this time",
             options: []
         )
+        let changeTime = UNNotificationAction(
+            identifier: Self.changeTimeActionIdentifier,
+            title: "Change the time",
+            options: [.foreground]
+        )
+        let stopReminding = UNNotificationAction(
+            identifier: Self.stopRemindingActionIdentifier,
+            title: "Stop reminding me",
+            options: [.destructive]
+        )
         let category = UNNotificationCategory(
             identifier: Self.categoryIdentifier,
-            actions: [markDone, snooze, notThisTime],
+            actions: [markDone, snooze, notThisTime, changeTime, stopReminding],
             intentIdentifiers: [],
             hiddenPreviewsBodyPlaceholder: "Nudgy has a message for you",
             options: [

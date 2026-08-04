@@ -19,6 +19,11 @@ final class NudgySession: ObservableObject {
     @Published private(set) var isImporting = false
     @Published private(set) var isNarrating = false
     @Published var composerText: String = ""
+    /// Something the user has said about their day, e.g. "mornings are rough". Routine, never
+    /// clinical — it only ever influences *when* a reminder fires.
+    @Published var statedRoutine: String?
+    /// Set when a notification asked to edit a reminder's time.
+    @Published var pendingTimeEditReminderID: String?
     /// Proposals produced by the engine that the user has not yet acted on.
     @Published private(set) var openProposals: [ReminderProposal] = []
     /// Everything the engine produced this import, before tiering.
@@ -30,9 +35,11 @@ final class NudgySession: ObservableObject {
     let languageProvider: LanguageModelProvider
     let scheduler: NotificationScheduler
     let permission: NotificationPermission
+    let ledger = AdherenceLedger()
     private let playback: SpeechPlayback
     private let normalizer: CareRecordNormalizer
     private let engine: ReminderProposalEngine
+    private let scheduleProposer = ScheduleProposer()
 
     private var hasStarted = false
 
@@ -68,8 +75,10 @@ final class NudgySession: ObservableObject {
         refreshStatus()
 
         await vault.loadAll()
+        ledger.load()
         await permission.refresh()
         await scheduler.refreshPending()
+        ledger.materializeElapsed(for: vault.approvedReminders)
 
         greet()
 
@@ -191,8 +200,16 @@ final class NudgySession: ObservableObject {
 
         await ensureNotificationPermission()
         var scheduled = 0
+        var modelChosen = 0
+        // Times already committed, so the model can space new reminders around them instead of
+        // stacking everything at the same default hour.
+        var taken: [DateComponents] = vault.approvedReminders.flatMap(\.times)
+
         for proposal in ready {
-            let reminder = makeReminder(from: proposal)
+            let timed = await timedProposal(proposal, avoiding: taken)
+            if timed.chosenByModel { modelChosen += 1 }
+            taken.append(contentsOf: timed.proposal.slots.compactMap(\.timeOfDay))
+            let reminder = makeReminder(from: timed.proposal)
             vault.approve(reminder)
             do {
                 try await scheduler.schedule(reminder)
@@ -204,7 +221,55 @@ final class NudgySession: ObservableObject {
         await scheduler.refreshPending()
         allProposals.removeAll { $0.activationTier == .ready }
 
-        append(.note("\(scheduled) reminder\(scheduled == 1 ? "" : "s") set up from your records"))
+        let suffix = modelChosen > 0 ? " · \(modelChosen) timed by Gemma" : ""
+        append(.note("\(scheduled) reminder\(scheduled == 1 ? "" : "s") set up from your records"
+                     + suffix))
+    }
+
+    /// Asks the model to choose this reminder's times, falling back to the deterministic spacing
+    /// already on the proposal.
+    ///
+    /// The fallback is what the slots already carry, so a failure here is invisible: the reminder
+    /// still arrives timed, just spaced by the resolver rather than by Gemma.
+    private func timedProposal(
+        _ proposal: ReminderProposal,
+        avoiding taken: [DateComponents]
+    ) async -> (proposal: ReminderProposal, chosenByModel: Bool) {
+        let fallback = proposal.slots.compactMap(\.timeOfDay)
+        guard !fallback.isEmpty, proposal.kind != .nutrition else {
+            // Meal cards are anchored to meals by definition; there is nothing to choose.
+            return (proposal, false)
+        }
+
+        let anchor = proposal.slots.compactMap { slot -> String? in
+            guard case .fromYourRecord = slot.provenance else { return nil }
+            return slot.label
+        }.first
+
+        let request = ScheduleProposer.Request(
+            itemName: proposal.title,
+            timesPerDay: fallback.count,
+            instructionText: proposal.sourceFacts
+                .first(where: { $0.label.lowercased().contains("instruction") })?.verbatim,
+            recordAnchor: anchor,
+            existingTimes: taken,
+            statedRoutine: statedRoutine
+        )
+
+        let outcome = await scheduleProposer.propose(
+            request, using: languageProvider.model, fallback: fallback
+        )
+        guard outcome.chosenByModel else { return (proposal, false) }
+
+        var updated = proposal
+        for (index, time) in outcome.times.enumerated() where index < updated.slots.count {
+            updated.slots[index].timeOfDay = time
+            updated.slots[index].provenance = .convenienceSuggestion(
+                basis: "Gemma picked this time on your phone, based on your other reminders. "
+                    + "It is a scheduling idea, not health guidance."
+            )
+        }
+        return (updated, true)
     }
 
     private func makeReminder(from proposal: ReminderProposal) -> ApprovedReminder {
@@ -521,6 +586,78 @@ final class NudgySession: ObservableObject {
         await scheduler.refreshPending()
         consume(proposal.id)
         append(.note("Set up \(proposal.title)"))
+    }
+
+    /// Handles a tap on one of the notification's actions.
+    ///
+    /// This is where approval actually lives now: the reminder is already running, and the moment
+    /// it fires is when someone has an opinion about it. Everything here is one tap, and
+    /// everything except "stop" is silent.
+    func handleNotificationAction(_ actionID: String, reminderID: String) async {
+        switch actionID {
+        case NotificationScheduler.markDoneActionIdentifier:
+            ledger.record(reminderID: reminderID, outcome: .acknowledged)
+
+        case NotificationScheduler.notThisTimeActionIdentifier:
+            // A reported skip, not an inferred one — the difference the whole ledger rests on.
+            ledger.record(reminderID: reminderID, outcome: .reportedSkipped)
+
+        case NotificationScheduler.snoozeActionIdentifier:
+            ledger.record(reminderID: reminderID, outcome: .snoozed)
+
+        case NotificationScheduler.stopRemindingActionIdentifier:
+            guard let reminder = vault.approvedReminders.first(where: { $0.id == reminderID })
+            else { return }
+            await stopReminding(reminder)
+
+        case NotificationScheduler.changeTimeActionIdentifier:
+            pendingTimeEditReminderID = reminderID
+
+        default:
+            break
+        }
+    }
+
+    /// Creates a reminder the person asked for themselves.
+    ///
+    /// The path for anything not in a chart. Provenance is `.manualEntry`, so the card says "you
+    /// entered this" rather than implying a clinician did — which is exactly why Nudgy can offer
+    /// it at all without inventing health advice.
+    func createUserReminder(title: String, times: [DateComponents]) async {
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, !times.isEmpty else { return }
+
+        let id = "nudgy.reminder.user.\(UUID().uuidString)"
+        let citation = SourceCitation(
+            sourceLabel: "You",
+            resourceType: "UserEntry",
+            resourceID: id,
+            fieldPath: "title",
+            verbatimText: trimmed,
+            recordedDate: Date(),
+            dataOrigin: .manualEntry
+        )
+        let reminder = ApprovedReminder(
+            id: id,
+            proposalID: id,
+            kind: .medication,
+            title: trimmed,
+            body: trimmed,
+            times: times,
+            sourceFacts: [SourceFact(label: "You asked for this", verbatim: trimmed, citation: citation)],
+            sourceLabel: "You added this",
+            dataOrigin: .manualEntry,
+            approvedAt: Date(),
+            isActive: true
+        )
+
+        await ensureNotificationPermission()
+        vault.approve(reminder)
+        do { try await scheduler.schedule(reminder) } catch {
+            append(.note("Saved \(trimmed), but couldn't schedule it: \(error.localizedDescription)"))
+        }
+        await scheduler.refreshPending()
+        append(.note("Added \(trimmed)"))
     }
 
     /// Applies new times to a running reminder and reschedules it.

@@ -12,7 +12,7 @@ struct PortalScreen: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            NudgyHeader { showStatus = true }
+            NudgyHeader(status: session.ledger.status) { showStatus = true }
 
             ScrollView {
                 VStack(alignment: .leading, spacing: NudgyTheme.Metric.md) {

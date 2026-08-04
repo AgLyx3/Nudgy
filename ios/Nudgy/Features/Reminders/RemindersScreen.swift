@@ -9,6 +9,7 @@ struct RemindersScreen: View {
     @EnvironmentObject private var session: NudgySession
     @State private var showStatus = false
     @State private var filter: Filter = .scheduled
+    @State private var isAddingReminder = false
 
     /// Two genuinely different things share this tab: a timetable, and a list of things you have
     /// on hand for when you need them. Mixing them made the timetable unreadable.
@@ -28,7 +29,7 @@ struct RemindersScreen: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            NudgyHeader { showStatus = true }
+            NudgyHeader(status: session.ledger.status) { showStatus = true }
 
             ScrollView {
                 VStack(alignment: .leading, spacing: NudgyTheme.Metric.lg) {
@@ -38,6 +39,7 @@ struct RemindersScreen: View {
                         reviewBanner
                     }
                     if filter == .scheduled { feed } else { onDemandList }
+                    addYourOwn
                     endOfFeed
                 }
                 .padding(.horizontal, NudgyTheme.Metric.containerMargin)
@@ -48,6 +50,11 @@ struct RemindersScreen: View {
         .background(NudgyTheme.Palette.background.ignoresSafeArea())
         .sheet(isPresented: $showStatus) {
             PrivacySheet(status: session.status, provider: session.languageProvider)
+        }
+        .sheet(isPresented: $isAddingReminder) {
+            AddReminderSheet { title, times in
+                Task { await session.createUserReminder(title: title, times: times) }
+            }
         }
     }
 
@@ -161,6 +168,34 @@ struct RemindersScreen: View {
             }
             .padding(.leading, 23)
         }
+    }
+
+    /// Anything that is not in a chart. Hydration, a supplement, a stretch someone was told about
+    /// verbally — the record cannot cover everything, and Nudgy will not invent what is missing,
+    /// so the person supplies it and is recorded as the source.
+    private var addYourOwn: some View {
+        Button {
+            isAddingReminder = true
+        } label: {
+            HStack(spacing: NudgyTheme.Metric.xs) {
+                Image(systemName: "plus.circle")
+                    .font(.system(size: 16))
+                Text("Add your own reminder")
+                    .font(NudgyTheme.Typeface.bodyMedium().weight(.medium))
+                Spacer(minLength: 0)
+            }
+            .foregroundStyle(NudgyTheme.Palette.primary)
+            .padding(NudgyTheme.Metric.md)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: NudgyTheme.Metric.radiusMedium)
+                    .stroke(
+                        NudgyTheme.Palette.outlineVariant,
+                        style: StrokeStyle(lineWidth: 1, dash: [5, 4])
+                    )
+            )
+        }
+        .buttonStyle(.plain)
     }
 
     private var endOfFeed: some View {
@@ -384,5 +419,72 @@ private struct OnDemandRow: View {
         .padding(NudgyTheme.Metric.md)
         .frame(maxWidth: .infinity, alignment: .leading)
         .nudgyCard()
+    }
+}
+
+
+/// Creating a reminder that is not in any record.
+private struct AddReminderSheet: View {
+    var onCreate: (String, [DateComponents]) -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var title = ""
+    @State private var timesPerDay = 1
+    @State private var firstTime = Calendar.current.date(
+        bySettingHour: 9, minute: 0, second: 0, of: Date()
+    ) ?? Date()
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("What should I remind you about?") {
+                    TextField("For example, drink water", text: $title)
+                }
+                Section("How often") {
+                    Picker("Times a day", selection: $timesPerDay) {
+                        ForEach(1...4, id: \.self) { count in
+                            Text(count == 1 ? "Once a day" : "\(count) times a day").tag(count)
+                        }
+                    }
+                    DatePicker("First one at", selection: $firstTime,
+                               displayedComponents: .hourAndMinute)
+                }
+                Section {
+                    Text("This one is yours, not from your records — so it will say you added it.")
+                        .font(NudgyTheme.Typeface.bodyMedium())
+                        .foregroundStyle(NudgyTheme.Palette.onSurfaceVariant)
+                }
+            }
+            .navigationTitle("Add a reminder")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Add") {
+                        onCreate(title, spreadTimes())
+                        dismiss()
+                    }
+                    .disabled(title.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+            }
+        }
+    }
+
+    /// Spreads the chosen count evenly through the waking day from the first time.
+    private func spreadTimes() -> [DateComponents] {
+        let calendar = Calendar.current
+        let start = calendar.dateComponents([.hour, .minute], from: firstTime)
+        guard let hour = start.hour, let minute = start.minute else { return [] }
+        guard timesPerDay > 1 else { return [DateComponents(hour: hour, minute: minute)] }
+
+        let startMinutes = hour * 60 + minute
+        let span = min(14 * 60, (22 * 60) - startMinutes)
+        let step = span / max(timesPerDay - 1, 1)
+        return (0..<timesPerDay).map { index in
+            let total = min(startMinutes + step * index, 22 * 60)
+            return DateComponents(hour: total / 60, minute: total % 60)
+        }
     }
 }
