@@ -14,6 +14,7 @@ struct ProposalCard: View {
     var onApprove: (ReminderProposal) -> Void
     var onEdit: (ReminderProposal) -> Void
     var onSkip: (ReminderProposal) -> Void
+    var onChooseFrequency: ((Int, ReminderProposal) -> Void)?
 
     @State private var isExpanded = false
     @State private var isPickingTimes = false
@@ -25,12 +26,14 @@ struct ProposalCard: View {
         proposal: ReminderProposal,
         onApprove: @escaping (ReminderProposal) -> Void,
         onEdit: @escaping (ReminderProposal) -> Void,
-        onSkip: @escaping (ReminderProposal) -> Void
+        onSkip: @escaping (ReminderProposal) -> Void,
+        onChooseFrequency: ((Int, ReminderProposal) -> Void)? = nil
     ) {
         self.proposal = proposal
         self.onApprove = onApprove
         self.onEdit = onEdit
         self.onSkip = onSkip
+        self.onChooseFrequency = onChooseFrequency
         _workingSlots = State(initialValue: proposal.slots)
     }
 
@@ -54,12 +57,19 @@ struct ProposalCard: View {
         return .proposed
     }
 
+    /// The chart never said how often. Nudgy asks rather than guessing — inventing a frequency
+    /// would be inventing a dose.
+    private var needsFrequency: Bool {
+        proposal.schedulingDeclinedReason == .frequencyNotSpecified && onChooseFrequency != nil
+    }
+
     /// The headline time.
     ///
     /// When nothing is set, this shows Nudgy's *suggestion* in muted grey rather than a placeholder
     /// dash — the card keeps an anchor, and the greyed colour plus the "Needs a time" chip both
     /// make clear the chart did not name it.
     private var headlineTime: String {
+        if needsFrequency { return "How often?" }
         if proposal.schedulingDeclinedReason != nil { return "Any time" }
         if let firstSet = workingSlots.compactMap(\.timeOfDay).first,
            workingSlots.allSatisfy({ $0.timeOfDay != nil }) {
@@ -105,11 +115,15 @@ struct ProposalCard: View {
                 FlagRow(flag: flag)
             }
 
+            if needsFrequency {
+                frequencyChooser
+            }
+
             if isExpanded {
                 expandedBody
             }
 
-            actionRow
+            if !needsFrequency { actionRow }
         }
         .padding(NudgyTheme.Metric.lg)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -136,7 +150,8 @@ struct ProposalCard: View {
                                 : NudgyTheme.Palette.onSurfaceMuted
                         )
                         .lineLimit(1)
-                        .minimumScaleFactor(0.6)
+                        .minimumScaleFactor(0.5)
+                        .layoutPriority(-1)
 
                     Image(systemName: "pencil")
                         .font(.system(size: 13, weight: .semibold))
@@ -339,6 +354,40 @@ struct ProposalCard: View {
             .foregroundStyle(tint)
         }
         .buttonStyle(.plain)
+    }
+
+    /// One tap to supply the missing fact. Deliberately coarse options — this is how people
+    /// actually describe a routine, and anything finer invites precision Nudgy has no basis for.
+    private var frequencyChooser: some View {
+        VStack(alignment: .leading, spacing: NudgyTheme.Metric.xs) {
+            Text("Your chart doesn't say how often to take this, and I'd rather ask than guess. "
+                 + "How often do you take it?")
+                .font(NudgyTheme.Typeface.bodyMedium())
+                .foregroundStyle(NudgyTheme.Palette.onSurfaceVariant)
+                .fixedSize(horizontal: false, vertical: true)
+
+            HStack(spacing: NudgyTheme.Metric.xs) {
+                ForEach([1, 2, 3, 4], id: \.self) { count in
+                    Button(count == 1 ? "Once" : "\(count)×") {
+                        onChooseFrequency?(count, proposal)
+                    }
+                    .buttonStyle(OutlineButtonStyle(tint: NudgyTheme.Palette.primary))
+                    .frame(maxWidth: .infinity)
+                }
+            }
+
+            Text("a day")
+                .font(NudgyTheme.Typeface.labelMedium())
+                .foregroundStyle(NudgyTheme.Palette.onSurfaceMuted)
+
+            HStack(spacing: NudgyTheme.Metric.xs) {
+                Button("Only when I need it") { onSkip(proposal) }
+                    .buttonStyle(QuietButtonStyle())
+                Spacer(minLength: 0)
+                Button("Skip") { onSkip(proposal) }
+                    .buttonStyle(QuietButtonStyle())
+            }
+        }
     }
 
     // MARK: - Actions

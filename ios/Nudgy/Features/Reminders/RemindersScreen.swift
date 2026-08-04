@@ -141,7 +141,10 @@ struct RemindersScreen: View {
                         proposal: proposal,
                         onApprove: { item in Task { await session.approve(item) } },
                         onEdit: { item in Task { await session.edit(item) } },
-                        onSkip: { item in Task { await session.skip(item) } }
+                        onSkip: { item in Task { await session.skip(item) } },
+                        onChooseFrequency: { count, item in
+                            Task { await session.applyFrequency(count, to: item) }
+                        }
                     )
                 }
             }

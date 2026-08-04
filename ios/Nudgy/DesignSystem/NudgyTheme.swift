@@ -150,11 +150,13 @@ enum ReminderState {
 
     var label: String {
         switch self {
+        // Kept to one short word or two wherever possible: these render uppercased in a pill
+        // beside a 32pt clock, and anything longer wraps mid-word.
         case .proposed: return "Proposed"
-        case .suggested: return "My suggestion"
-        case .needsTime: return "Needs a time"
+        case .suggested: return "Suggested"
+        case .needsTime: return "Set time"
         case .active: return "On"
-        case .onlyWhenNeeded: return "When you need it"
+        case .onlyWhenNeeded: return "As needed"
         case .done: return "Done"
         case .paused: return "Paused"
         }
@@ -189,6 +191,8 @@ struct StatusChip: View {
         Text(state.label.uppercased())
             .font(NudgyTheme.Typeface.labelSmall())
             .kerning(0.6)
+            .lineLimit(1)
+            .fixedSize()
             .foregroundStyle(state.foreground)
             .padding(.horizontal, 10)
             .padding(.vertical, 5)

@@ -491,6 +491,38 @@ final class NudgySession: ObservableObject {
         return sources
     }
 
+    /// The user tells Nudgy how often they take something the chart never specified.
+    ///
+    /// Frequency is a dosing fact, not a scheduling preference, so Nudgy will not invent one — but
+    /// the person taking the medication knows it, and once they say it the reminder behaves like
+    /// any other. Provenance records that *they* supplied it, never the chart.
+    func applyFrequency(_ timesPerDay: Int, to proposal: ReminderProposal) async {
+        let defaults = ScheduleResolver.defaultClockTimes(
+            perDay: timesPerDay, options: ScheduleResolver.Options()
+        )
+        let slots: [ProposedSlot] = (0..<timesPerDay).map { index in
+            ProposedSlot(
+                id: "\(proposal.id)#slot\(index)",
+                timeOfDay: index < defaults.count ? defaults[index] : nil,
+                provenance: .patternNoticed(basis: "you told me how often"),
+                label: timesPerDay == 1 ? "Daily dose" : "Dose \(index + 1) of \(timesPerDay)"
+            )
+        }
+
+        var updated = proposal
+        updated.slots = slots
+        let reminder = makeReminder(from: updated)
+
+        await ensureNotificationPermission()
+        vault.approve(reminder)
+        do { try await scheduler.schedule(reminder) } catch {
+            append(.note("Saved \(proposal.title), but couldn't schedule it: \(error.localizedDescription)"))
+        }
+        await scheduler.refreshPending()
+        consume(proposal.id)
+        append(.note("Set up \(proposal.title)"))
+    }
+
     /// Applies new times to a running reminder and reschedules it.
     ///
     /// Cancel-then-add through the scheduler, so changing four doses down to two does not strand

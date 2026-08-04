@@ -202,6 +202,7 @@
 				INFOPLIST_KEY_NSCameraUsageDescription = "Nudgy opens the camera so you can photograph a medication label. In this version the photo is a demo affordance and is not analyzed or uploaded.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Nudgy uses the microphone so you can speak to it instead of typing. Speech is transcribed on this device.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Nudgy transcribes your speech on this device so your health conversation never leaves your phone.";
+				INFOPLIST_FILE = "Nudgy-Info.plist";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
@@ -234,6 +235,7 @@
 				INFOPLIST_KEY_NSCameraUsageDescription = "Nudgy opens the camera so you can photograph a medication label. In this version the photo is a demo affordance and is not analyzed or uploaded.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Nudgy uses the microphone so you can speak to it instead of typing. Speech is transcribed on this device.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Nudgy transcribes your speech on this device so your health conversation never leaves your phone.";
+				INFOPLIST_FILE = "Nudgy-Info.plist";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;

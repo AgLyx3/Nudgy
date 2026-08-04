@@ -149,7 +149,7 @@ final class NotificationScheduler: ObservableObject {
             identifier: Self.categoryIdentifier,
             actions: [markDone, snooze, notThisTime],
             intentIdentifiers: [],
-            hiddenPreviewsBodyPlaceholder: "A reminder from Nudgy",
+            hiddenPreviewsBodyPlaceholder: "Nudgy has a message for you",
             options: [
                 // Show the title even when previews are hidden. This is only safe because the title
                 // is a fixed, non-clinical phrase — see `content(for:)`. Subtitle is deliberately
@@ -347,8 +347,10 @@ final class NotificationScheduler: ObservableObject {
     /// and the user can always widen previews in iOS Settings if they prefer convenience.
     private func content(for reminder: ApprovedReminder, slotIndex: Int) -> UNMutableNotificationContent {
         let content = UNMutableNotificationContent()
-        content.title = "A gentle nudge"
+        content.title = "Nudgy"
         content.body = Self.discreetBody(for: reminder.kind)
+        // Never populated. It is the field someone would later "helpfully" fill with the drug name.
+        content.subtitle = ""
         content.sound = .default
         content.categoryIdentifier = Self.categoryIdentifier
         // Groups a twice-daily medication's two alarms into one stack rather than two.
@@ -365,13 +367,22 @@ final class NotificationScheduler: ObservableObject {
     }
 
     /// The one sentence that appears on the lock screen.
+    /// What a bystander could read.
+    ///
+    /// A lock screen is a public surface, so the body names nothing — not the medication, not the
+    /// clinic, not even the category. Anyone glancing at the phone learns only that this person
+    /// uses Nudgy.
+    ///
+    /// The detail is not lost, it is *gated*: with iOS previews set to "When Unlocked" (the Face ID
+    /// default) the placeholder shows to a stranger and the real body appears the moment the owner
+    /// looks at it. So the same notification is discreet in a waiting room and useful in a kitchen,
+    /// without us having to choose one.
     static func discreetBody(for kind: ReminderKind) -> String {
-        switch kind {
-        case .medication:
-            return "Time for your medication. Open Nudgy to see which one."
-        case .therapy:
-            return "Time for your exercise. Open Nudgy for the details."
-        }
+        // Deliberately identical for every kind. A body that varied by category would still leak
+        // something, and the `kind` parameter is kept so the signature cannot quietly grow into
+        // one that accepts a medication name.
+        _ = kind
+        return "It's time for one of your reminders. Tap to see it."
     }
 
     // MARK: - Identifiers
