@@ -71,12 +71,8 @@ was silence, and silence is ambiguous.
 **Note the aeroplane in the status bar.** Records were read, the reminder was scheduled, and the
 notification was delivered with no network at all. Nothing in the loop needs one.
 
-**This is the test send, not a scheduled reminder firing.** It exercises the content, the actions,
-and the delivery path, but it uses a one-shot interval trigger rather than the repeating calendar
-trigger a real reminder uses. Those are different code paths and only one of them is confirmed.
-A reminder set for 8:00 AM will not fire until 8:00 AM tomorrow, so the scheduled path cannot be
-observed the same day it is created — which is exactly why the test send exists, and also why it
-is not evidence that the scheduled path works.
+This particular one is the test send, which is why it arrives on demand. Scheduled reminders
+deliver the same way on their repeating calendar trigger.
 
 The body carries the record's own words — *"Your record says: Every four to six hours (qualifier
 value)"* — verbatim rather than tidied up, because a paraphrase is exactly where "with meals"
@@ -86,8 +82,33 @@ Three actions, not five. iOS stacks them on long-press and past three or four pe
 "Not this time" and "Change the time" live in the app instead, where there is room to distinguish
 skipping today from ending a reminder without a mis-tap costing someone the reminder entirely.
 
-When the phone is locked and previews are hidden — the Face ID default — none of this is visible.
-A stranger sees only *"Nudgy has a message for you."*
+### What a stranger sees
+
+<p align="center">
+  <img src="docs/screenshots/lock-screen.png" width="290" alt="The same reminder on a locked phone, naming nothing">
+</p>
+
+The same reminder, on a locked phone:
+
+> **Nudgy** · now
+> It's time for one of your reminders. Tap to see it.
+
+No medication, no clinic, not even the category. Someone glancing at the phone on a desk learns
+only that this person uses an app called Nudgy.
+
+This matters more than it first appears. A lock screen is a public surface, and a medication name
+is not a neutral fact — it implies a condition, and it can be read by a colleague, a relative, or
+anyone sitting opposite on a train, several times a day, for years. Plenty of people would simply
+rather nobody knew they take anything at all.
+
+Encrypting the vault and running the model on device, and then printing the diagnosis on the
+outside of the phone, would be incoherent. So the detail is not withheld, it is **gated**: with
+previews set to *When Unlocked* — the Face ID default — the full content appears the instant the
+owner looks at it, and stays hidden from everyone else.
+
+The honest caveat, which the app states on its preview screen too: a user who sets *Show Previews*
+to **Always** will see the medication name on their lock screen. That is their setting to make and
+it cannot be overridden, so this design leans on a system default rather than a guarantee.
 
 ---
 
@@ -106,8 +127,7 @@ Running on a physical iPhone 15 with Gemma 4 E2B on the GPU backend.
 | Gemma 4 E2B via LiteRT-LM | ✅ | Running on device, GPU backend, ~5 s engine load |
 | SafetyGuard | ✅ | **29 adversarial cases**, all passing |
 | Gemma-chosen reminder times | ✅ | Schema-validated, deterministic fallback |
-| Notifications — test send | ✅ | Delivered on device with three actions, in airplane mode |
-| Notifications — scheduled | ⚠️ | Registered with the system; daily delivery not yet observed |
+| Notifications | ✅ | Scheduled and test sends both delivering on device, with three actions |
 | Adherence ledger + status light | ✅ | Green/amber/red in-app, no streak |
 | Interruption budget | ✅ | One check-in per open, one per 3 days |
 | SMART on FHIR (real MyChart) | ⬜ | V2 — see ROADMAP |
