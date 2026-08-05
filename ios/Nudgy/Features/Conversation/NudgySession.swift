@@ -27,6 +27,9 @@ final class NudgySession: ObservableObject {
     /// Why the last narration fell back, if it did. Surfaced in the privacy sheet rather than
     /// hidden, because an invisible fallback is indistinguishable from a model that is not running.
     @Published private(set) var lastNarrationError: String?
+    /// Outcome of the last test send, shown next to the button. Without it a blocked notification
+    /// is indistinguishable from a working one that simply has not fired yet.
+    @Published var testSendResult: String?
     /// Proposals produced by the engine that the user has not yet acted on.
     @Published private(set) var openProposals: [ReminderProposal] = []
     /// Everything the engine produced this import, before tiering.
@@ -458,15 +461,37 @@ final class NudgySession: ObservableObject {
 
     /// Demo affordance: fires a real local notification a few seconds out so the loop can be shown
     /// end to end without waiting for the scheduled hour.
-    func demoFireMostRecent() async {
-        guard let reminder = vault.approvedReminders.last else { return }
-        await ensureNotificationPermission()
+    /// Fires a specific reminder about ten seconds out.
+    ///
+    /// Takes the reminder explicitly rather than picking one: the preview shows a particular
+    /// medication, and sending a different one — which is what happened while this used
+    /// `approvedReminders.last` against a preview built from `activeReminders.first` — makes the
+    /// feature actively misleading in exactly the situation it exists for.
+    func demoFire(_ reminder: ApprovedReminder) async {
+        let granted = await permission.request()
+        guard granted == .authorized || granted == .provisional else {
+            testSendResult = "iOS is blocking notifications for Nudgy. "
+                + "Settings ▸ Notifications ▸ Nudgy ▸ Allow Notifications, then try again."
+            return
+        }
+
         do {
             _ = try await scheduler.debugFireSoon(reminder)
-            append(.note("Demo: sending that reminder in about 10 seconds."))
+            testSendResult = "Sending \"\(reminder.title)\" in about 10 seconds — "
+                + "lock your phone to see it the way a stranger would."
+            append(.note("Test notification queued for \(reminder.title)"))
         } catch {
-            append(.note("Could not send the demo notification: \(error.localizedDescription)"))
+            testSendResult = "Couldn't send it: \(error.localizedDescription)"
         }
+    }
+
+    /// Kept for the older call site; sends the first running reminder.
+    func demoFireMostRecent() async {
+        guard let reminder = activeReminders.first else {
+            testSendResult = "There are no running reminders to test with yet."
+            return
+        }
+        await demoFire(reminder)
     }
 
     // MARK: - Narration

@@ -44,6 +44,25 @@ struct RemindersScreen: View {
                     if filter == .scheduled { feed } else { onDemandList }
                     addYourOwn
                     if !session.activeReminders.isEmpty { testNotification }
+            if let result = session.testSendResult {
+                HStack(alignment: .top, spacing: NudgyTheme.Metric.xs) {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 13))
+                        .foregroundStyle(NudgyTheme.Palette.tertiary)
+                    Text(result)
+                        .font(NudgyTheme.Typeface.bodyMedium())
+                        .foregroundStyle(NudgyTheme.Palette.onSurfaceVariant)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 0)
+                }
+                .padding(NudgyTheme.Metric.sm)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    NudgyTheme.Palette.surfaceLow,
+                    in: RoundedRectangle(cornerRadius: NudgyTheme.Metric.radiusMedium)
+                )
+                .onTapGesture { session.testSendResult = nil }
+            }
                     endOfFeed
                 }
                 .padding(.horizontal, NudgyTheme.Metric.containerMargin)
@@ -89,7 +108,7 @@ struct RemindersScreen: View {
         }
         .sheet(item: $previewing) { reminder in
             NotificationPreviewSheet(reminder: reminder) {
-                Task { await session.demoFireMostRecent() }
+                Task { await session.demoFire(reminder) }
             }
         }
         .sheet(isPresented: $isAddingReminder) {
@@ -248,6 +267,9 @@ struct RemindersScreen: View {
     private var testNotification: some View {
         Button {
             previewing = session.activeReminders.first
+            if previewing == nil {
+                session.testSendResult = "Approve a reminder first — there's nothing to send yet."
+            }
         } label: {
             HStack(spacing: NudgyTheme.Metric.xs) {
                 Image(systemName: "bell.badge")
