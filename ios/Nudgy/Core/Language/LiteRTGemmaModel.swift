@@ -99,6 +99,11 @@ actor GenerationGate {
     }
 }
 
+/// Implemented by any model holding reclaimable memory.
+protocol LiteRTUnloadable: AnyObject {
+    func unload()
+}
+
 // MARK: - The real thing
 
 #if canImport(LiteRTLM)
@@ -110,7 +115,7 @@ actor GenerationGate {
 /// never sees a `ReminderProposal` field it could accidentally alter. Every path out of this type
 /// goes through `NarrationPipeline`, which is where the guard lives — so there is no way to add a
 /// method here that quietly skips review.
-final class LiteRTGemmaModel: NudgyLanguageModel {
+final class LiteRTGemmaModel: NudgyLanguageModel, LiteRTUnloadable {
 
     enum Backend: String {
         case gpu

@@ -42,6 +42,7 @@ struct RemindersScreen: View {
                     }
                     if filter == .scheduled { feed } else { onDemandList }
                     addYourOwn
+                    if !session.activeReminders.isEmpty { testNotification }
                     endOfFeed
                 }
                 .padding(.horizontal, NudgyTheme.Metric.containerMargin)
@@ -227,6 +228,37 @@ struct RemindersScreen: View {
                         NudgyTheme.Palette.outlineVariant,
                         style: StrokeStyle(lineWidth: 1, dash: [5, 4])
                     )
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// Fires a real local notification about ten seconds out.
+    ///
+    /// Reminders are scheduled for real clock times, so without this the only way to see one is to
+    /// wait until morning — which is no way to check that the loop works, and no way to show it to
+    /// anyone. It still takes an existing approved reminder: even the test path cannot conjure an
+    /// alert for something the user never agreed to.
+    private var testNotification: some View {
+        Button {
+            Task { await session.demoFireMostRecent() }
+        } label: {
+            HStack(spacing: NudgyTheme.Metric.xs) {
+                Image(systemName: "bell.badge")
+                    .font(.system(size: 14))
+                Text("Send one now to test")
+                    .font(NudgyTheme.Typeface.bodyMedium().weight(.medium))
+                Spacer(minLength: 0)
+                Text("~10s")
+                    .font(NudgyTheme.Typeface.labelSmall())
+                    .foregroundStyle(NudgyTheme.Palette.onSurfaceMuted)
+            }
+            .foregroundStyle(NudgyTheme.Palette.tertiary)
+            .padding(NudgyTheme.Metric.md)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                NudgyTheme.Palette.tertiaryContainer.opacity(0.35),
+                in: RoundedRectangle(cornerRadius: NudgyTheme.Metric.radiusMedium)
             )
         }
         .buttonStyle(.plain)

@@ -506,12 +506,15 @@ final class NudgySession: ObservableObject {
         guard !reminders.isEmpty else { return nil }
 
         let asked = question.lowercased()
-        let matched = reminders.first { reminder in
-            let words = reminder.title
-                .lowercased()
-                .split(whereSeparator: { !$0.isLetter })
-                .filter { $0.count > 3 }
-            return words.contains { asked.contains($0) }
+        func names(_ title: String) -> [String] {
+            title.lowercased().split(whereSeparator: { !$0.isLetter })
+                .map(String.init).filter { $0.count > 3 }
+        }
+        let matched = reminders.first { names($0.title).contains { asked.contains($0) } }
+        // A question can name something still awaiting review, not just something running.
+        if matched == nil,
+           let pending = allProposals.first(where: { names($0.title).contains { asked.contains($0) } }) {
+            return pending
         }
 
         // Naming something narrows the context to it. Asking about the day is a question about
@@ -592,11 +595,17 @@ final class NudgySession: ObservableObject {
         )
     }
 
+    /// The proposal currently under discussion — one the user can actually see on screen.
+    ///
+    /// Deliberately does **not** fall back to `openProposals.first`. That fallback meant every
+    /// question in chat was grounded on one arbitrary proposal out of eleven, so Nudgy appeared to
+    /// know about exactly one medication no matter what was asked — and it silently shadowed both
+    /// the name-matching and whole-schedule grounding that follow it.
     private func mostRecentProposal() -> ReminderProposal? {
         for entry in timeline.reversed() {
             if case .proposal(let proposal) = entry.content { return proposal }
         }
-        return openProposals.first
+        return nil
     }
 
     private var patientFirstName: String? {

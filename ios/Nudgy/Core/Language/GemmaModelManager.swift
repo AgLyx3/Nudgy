@@ -195,6 +195,17 @@ final class GemmaModelManager: NSObject, ObservableObject {
         let session = self.session ?? URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
         self.session = session
 
+        // The only network egress in the app, and until now the only thing stopping it going
+        // somewhere else was a comment. ARCHITECTURE.md claims EgressPolicy "gates all URLSession
+        // use"; this is the line that makes that true rather than aspirational.
+        EgressPolicy.assertNoPHI(url)
+        do {
+            try EgressPolicy.requireAllowed(url)
+        } catch {
+            setAvailability(.failed(reason: "Refused to contact \(url.host ?? "an unlisted host")."))
+            return
+        }
+
         let task: URLSessionDownloadTask
         if let resumeData = loadResumeData() {
             task = session.downloadTask(withResumeData: resumeData)

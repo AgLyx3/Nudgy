@@ -1,5 +1,6 @@
 import Combine
 import Foundation
+import UIKit
 import os
 
 /// A locally recorded SafetyGuard rejection.
@@ -100,6 +101,18 @@ final class LanguageModelProvider: ObservableObject {
 
         // Re-resolve when the weights land, so a download finishing upgrades the app without a
         // relaunch.
+        // Gemma holds ~1.45 GB on the GPU backend. On a 6 GB phone that is exactly the kind of
+        // resident allocation iOS reclaims by killing the app. `unload()` existed for this and was
+        // never wired to anything, so the only available behaviour was termination.
+        NotificationCenter.default.publisher(for: UIApplication.didReceiveMemoryWarningNotification)
+            .sink { [weak self] _ in
+                guard let self else { return }
+                Self.log.error("memory warning — unloading the engine")
+                DiagnosticLog.note("memory warning: unloading engine")
+                (self.cachedGemmaModel as? LiteRTUnloadable)?.unload()
+            }
+            .store(in: &cancellables)
+
         modelManager.$availability
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in self?.reevaluate() }
@@ -183,6 +196,11 @@ final class LanguageModelProvider: ObservableObject {
         }
     }
 
+    /// Lets the provider drop the engine without importing LiteRT types, which are behind
+    /// `#if canImport`.
+    ///
+    /// Nothing is lost by unloading: `prepare()` rebuilds on the next request, so the cost of a
+    /// memory warning becomes one slow reply rather than a terminated app.
     /// Diagnostics only. Carries model state and rule names — never prompt or health content.
     static let log = Logger(subsystem: "app.nudgy.Nudgy", category: "language")
 
