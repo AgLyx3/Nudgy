@@ -11,12 +11,14 @@ import SwiftUI
 /// The deferred capture implementation is preserved at `ios/Deferred/SpeechCapture.swift`.
 struct Composer: View {
     @Binding var text: String
+    /// Owned by the screen so tapping the conversation can dismiss the keyboard — a
+    /// `@FocusState` private to this view cannot be cleared from outside it.
+    var isFocused: FocusState<Bool>.Binding
 
     var onSend: (String) -> Void
     var onQuickAction: (QuickAction) -> Void
     var onAddFromPhoto: () -> Void
 
-    @FocusState private var isTextFocused: Bool
 
     enum QuickAction: String, CaseIterable, Identifiable {
         case reviewReminders
@@ -88,8 +90,13 @@ struct Composer: View {
             HStack(spacing: 6) {
                 TextField("Ask privately…", text: $text, axis: .vertical)
                     .font(NudgyTheme.Typeface.bodyMedium())
+                    // Set explicitly: the field inherits no colour of its own, and on a white
+                    // capsule the default rendered white on white — typing looked like nothing
+                    // was happening.
+                    .foregroundStyle(NudgyTheme.Palette.onSurface)
+                    .tint(NudgyTheme.Palette.primary)
                     .lineLimit(1...4)
-                    .focused($isTextFocused)
+                    .focused(isFocused)
                     .submitLabel(.send)
                     .onSubmit(send)
 
@@ -117,6 +124,6 @@ struct Composer: View {
         guard !trimmed.isEmpty else { return }
         onSend(trimmed)
         text = ""
-        isTextFocused = false
+        isFocused.wrappedValue = false
     }
 }

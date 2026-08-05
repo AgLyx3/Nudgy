@@ -1,5 +1,6 @@
 import Combine
 import Foundation
+import os
 
 /// A locally recorded SafetyGuard rejection.
 ///
@@ -157,20 +158,33 @@ final class LanguageModelProvider: ObservableObject {
     // MARK: - Narration
 
     /// The call site API. Never throws; falls back and records instead.
+    /// Always narrate through here, never through `provider.model` directly.
+    ///
+    /// This is the only path that records safety interventions and downgrades the status when the
+    /// engine fails permanently. `NudgySession` called `model.narrate` directly for a while, and
+    /// the result was a status line reporting "Gemma 4 E2B · on device" while every reply came from
+    /// a template — because the code that would have corrected the status was never reached.
     func narrate(_ request: NarrationRequest) async -> NarrationResult {
+        DiagnosticLog.note("narrate: selection=\(self.selection) model=\(self.model.displayName)"); Self.log.info("narrate: selection=\(String(describing: self.selection), privacy: .public) model=\(self.model.displayName, privacy: .public)")
         do {
             let result = try await model.narrate(request)
             record(result, for: request)
+            DiagnosticLog.note("narrate: source=\(result.source.rawValue) rule=\(result.verdict?.rule?.rawValue ?? "none") intervened=\(result.safetyDidIntervene)"); Self.log.info("narrate: source=\(result.source.rawValue, privacy: .public) rule=\(result.verdict?.rule?.rawValue ?? "none", privacy: .public)")
             return result
         } catch let error as LanguageModelError {
+            DiagnosticLog.note("narrate: THREW \(error.localizedDescription) permanent=\(error.isPermanent)"); Self.log.error("narrate: threw \(error.localizedDescription, privacy: .public) permanent=\(error.isPermanent)")
             if error.isPermanent {
                 downgrade(to: .startupFailed(error.localizedDescription))
             }
             return .template(text: NarrationTemplates.render(request))
         } catch {
+            Self.log.error("narrate: threw \(error.localizedDescription, privacy: .public)")
             return .template(text: NarrationTemplates.render(request))
         }
     }
+
+    /// Diagnostics only. Carries model state and rule names — never prompt or health content.
+    static let log = Logger(subsystem: "app.nudgy.Nudgy", category: "language")
 
     /// Streaming variant. Records the verdict when the stream completes.
     func narrateStream(_ request: NarrationRequest) -> AsyncThrowingStream<NarrationEvent, Error> {

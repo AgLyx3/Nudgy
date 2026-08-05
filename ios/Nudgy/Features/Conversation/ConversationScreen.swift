@@ -8,6 +8,7 @@ import SwiftUI
 struct ConversationScreen: View {
     @EnvironmentObject private var session: NudgySession
     @State private var showPrivacySheet = false
+    @FocusState private var isComposerFocused: Bool
 
     var body: some View {
         VStack(spacing: 0) {
@@ -17,6 +18,7 @@ struct ConversationScreen: View {
 
             Composer(
                 text: $session.composerText,
+                isFocused: $isComposerFocused,
                 onSend: { text in Task { await session.send(text) } },
                 onQuickAction: { action in Task { await session.runQuickAction(action) } },
                 onAddFromPhoto: { session.showPhotoDraft() }
@@ -24,7 +26,7 @@ struct ConversationScreen: View {
         }
         .background(NudgyTheme.Palette.background.ignoresSafeArea())
         .sheet(isPresented: $showPrivacySheet) {
-            PrivacySheet(status: session.status, provider: session.languageProvider)
+            PrivacySheet(status: session.status, provider: session.languageProvider, narrationError: session.lastNarrationError)
         }
     }
 
@@ -61,6 +63,11 @@ struct ConversationScreen: View {
                 .padding(.horizontal, NudgyTheme.Metric.containerMargin)
                 .padding(.top, 4)
             }
+            // Tapping the conversation puts the keyboard away, and dragging it does too — the
+            // usual two ways people expect to get a keyboard off the screen.
+            .scrollDismissesKeyboard(.interactively)
+            .contentShape(Rectangle())
+            .onTapGesture { isComposerFocused = false }
             .onChange(of: session.timeline.count) { _, _ in
                 withAnimation(.easeOut(duration: 0.28)) {
                     proxy.scrollTo("bottom", anchor: .bottom)
@@ -101,6 +108,7 @@ private struct ThinkingRow: View {
 struct PrivacySheet: View {
     let status: SessionStatus
     @ObservedObject var provider: LanguageModelProvider
+    var narrationError: String?
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -136,6 +144,15 @@ struct PrivacySheet: View {
                               + "will not invent a dose, a time, or an instruction that is not in "
                               + "your record."
                     )
+
+                    if let failure = narrationError {
+                        claim(
+                            icon: "exclamationmark.triangle",
+                            title: "Last reply used fixed wording",
+                            detail: "The model was asked but could not answer, so Nudgy used its "
+                                  + "own wording instead. Reason: \(failure)"
+                        )
+                    }
 
                     if !provider.safetyEvents.isEmpty {
                         safetySection

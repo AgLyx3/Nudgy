@@ -51,7 +51,7 @@ struct RemindersScreen: View {
         }
         .background(NudgyTheme.Palette.background.ignoresSafeArea())
         .sheet(isPresented: $showStatus) {
-            PrivacySheet(status: session.status, provider: session.languageProvider)
+            PrivacySheet(status: session.status, provider: session.languageProvider, narrationError: session.lastNarrationError)
         }
         // "Change the time" on a notification opens the app; this is what it opens *to*. Without
         // it the action is a dead end, which is worse than not offering it.

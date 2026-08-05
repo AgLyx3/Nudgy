@@ -33,7 +33,7 @@ struct PortalScreen: View {
         }
         .background(NudgyTheme.Palette.background.ignoresSafeArea())
         .sheet(isPresented: $showStatus) {
-            PrivacySheet(status: session.status, provider: session.languageProvider)
+            PrivacySheet(status: session.status, provider: session.languageProvider, narrationError: session.lastNarrationError)
         }
     }
 

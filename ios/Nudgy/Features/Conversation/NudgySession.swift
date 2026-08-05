@@ -24,6 +24,9 @@ final class NudgySession: ObservableObject {
     @Published var statedRoutine: String?
     /// Set when a notification asked to edit a reminder's time.
     @Published var pendingTimeEditReminderID: String?
+    /// Why the last narration fell back, if it did. Surfaced in the privacy sheet rather than
+    /// hidden, because an invisible fallback is indistinguishable from a model that is not running.
+    @Published private(set) var lastNarrationError: String?
     /// Proposals produced by the engine that the user has not yet acted on.
     @Published private(set) var openProposals: [ReminderProposal] = []
     /// Everything the engine produced this import, before tiering.
@@ -407,12 +410,19 @@ final class NudgySession: ObservableObject {
     func send(_ text: String) async {
         append(.user(text: text, wasSpoken: false))
 
-        // Follow-ups are grounded in a specific proposal — never the whole vault. If there is no
-        // proposal in play, the most recent one under discussion is used.
-        guard let context = mostRecentProposal() else {
+        // Follow-ups are grounded in one specific thing — never the whole vault.
+        //
+        // This used to require an *open proposal*, which meant chat silently stopped working the
+        // moment tiering started auto-activating reminders: proposals left `openProposals`, no
+        // grounding context could be found, and every question got fixed copy without the model
+        // ever being asked. Running reminders are the obvious context, and they carry the same
+        // cited facts a proposal does.
+        DiagnosticLog.note("send: activeReminders=\(activeReminders.count) openProposals=\(openProposals.count)")
+        guard let context = groundingContext(for: text) else {
+            DiagnosticLog.note("send: NO GROUNDING CONTEXT — model not asked")
             append(.assistant(
-                text: "I can talk through any reminder I have proposed. There is not one open "
-                    + "right now.",
+                text: "I don't have any reminders set up yet, so there's nothing for me to talk "
+                    + "through. Once some are running, ask me anything about them.",
                 narrationSource: .staticCopy
             ))
             return
@@ -464,12 +474,122 @@ final class NudgySession: ObservableObject {
         isNarrating = true
         defer { isNarrating = false }
         do {
-            return try await languageProvider.model.narrate(request)
+            let result = await languageProvider.narrate(request)
+            // A SafetyGuard rejection does not throw — it returns a template. Without this, a
+            // rejected reply looked identical to a model that was never asked.
+            if result.source == .deterministicTemplate {
+                lastNarrationError = result.verdict?.rule.map {
+                    "SafetyGuard rejected the model's wording (\($0.title))"
+                } ?? "The model returned nothing usable."
+            } else {
+                lastNarrationError = nil
+            }
+            return result
         } catch {
-            // Narration failing must never block the loop; the proposal card already carries the
-            // clinical content on its own.
+            // Narration failing must never block the loop — the card already carries the clinical
+            // content. But it must not be *silent* either: swallowing this is how a loaded model
+            // reporting "on device" still produced scripted replies with nothing to explain it.
+            lastNarrationError = error.localizedDescription
             return .template(text: "Here is what I found in your record.")
         }
+    }
+
+    /// The single item a question is about.
+    ///
+    /// Prefers a proposal under discussion, then a running reminder whose name the question
+    /// mentions, then simply the first running reminder. Deliberately one item: the prompt builder
+    /// is given one thing with its citations, never a dump of everything Nudgy knows.
+    private func groundingContext(for question: String) -> ReminderProposal? {
+        if let proposal = mostRecentProposal() { return proposal }
+
+        let reminders = activeReminders
+        guard !reminders.isEmpty else { return nil }
+
+        let asked = question.lowercased()
+        let matched = reminders.first { reminder in
+            let words = reminder.title
+                .lowercased()
+                .split(whereSeparator: { !$0.isLetter })
+                .filter { $0.count > 3 }
+            return words.contains { asked.contains($0) }
+        }
+
+        // Naming something narrows the context to it. Asking about the day is a question about
+        // *everything*, and answering it from one arbitrary reminder was the bug: Gemma correctly
+        // described the whole schedule, SafetyGuard correctly rejected every dose that was not in
+        // the single-item context, and the reply silently became a template. The scope of the
+        // grounding has to match the scope of the question.
+        if let matched { return proposal(from: matched) }
+        return scheduleOverviewProposal(from: reminders)
+    }
+
+    /// The whole day's schedule as one grounded context.
+    ///
+    /// Still not a vault dump: it carries the reminders that are actually running and the facts
+    /// they were built from, and nothing about conditions, allergies, or anything not being asked
+    /// about.
+    private func scheduleOverviewProposal(from reminders: [ApprovedReminder]) -> ReminderProposal {
+        let facts: [SourceFact] = reminders.flatMap { reminder -> [SourceFact] in
+            let times = reminder.times.map(ProposalCard.format).joined(separator: ", ")
+            var built: [SourceFact] = []
+            if let anchor = reminder.sourceFacts.first {
+                built.append(
+                    SourceFact(
+                        label: reminder.title,
+                        verbatim: times.isEmpty
+                            ? "\(reminder.title) — taken only when needed"
+                            : "\(reminder.title) — reminders at \(times)",
+                        citation: anchor.citation
+                    )
+                )
+                built.append(contentsOf: reminder.sourceFacts)
+            }
+            return built
+        }
+
+        let citation = reminders.first?.sourceFacts.first?.citation
+        return ReminderProposal(
+            id: "nudgy.context.schedule",
+            kind: .medication,
+            title: "Everything on your schedule",
+            subtitle: "\(reminders.count) reminders running",
+            sourceFacts: facts,
+            slots: [],
+            flags: [],
+            primaryProvenance: citation.map { .fromYourRecord($0) }
+                ?? .patternNoticed(basis: "your current reminders"),
+            sourceLabel: "Your records",
+            dataOrigin: reminders.first?.dataOrigin ?? .manualEntry,
+            schedulingDeclinedReason: nil
+        )
+    }
+
+    /// Presents a running reminder in the shape the prompt builder expects.
+    ///
+    /// An `ApprovedReminder` already carries the cited facts it was built from, so nothing is
+    /// invented here — this is a change of container, not of content.
+    private func proposal(from reminder: ApprovedReminder) -> ReminderProposal {
+        ReminderProposal(
+            id: reminder.proposalID,
+            kind: reminder.kind,
+            title: reminder.title,
+            subtitle: reminder.sourceLabel,
+            sourceFacts: reminder.sourceFacts,
+            slots: reminder.times.enumerated().map { index, time in
+                ProposedSlot(
+                    id: "\(reminder.id)#\(index)",
+                    timeOfDay: time,
+                    provenance: .patternNoticed(basis: "this reminder is already running"),
+                    label: reminder.times.count == 1 ? "Daily" : "Dose \(index + 1)"
+                )
+            },
+            flags: [],
+            primaryProvenance: reminder.sourceFacts.first.map { .fromYourRecord($0.citation) }
+                ?? .patternNoticed(basis: "you added this"),
+            sourceLabel: reminder.sourceLabel,
+            dataOrigin: reminder.dataOrigin,
+            schedulingDeclinedReason: nil
+        )
     }
 
     private func mostRecentProposal() -> ReminderProposal? {

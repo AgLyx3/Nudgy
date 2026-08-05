@@ -1,4 +1,5 @@
 import Foundation
+import os
 
 #if canImport(LiteRTLM)
 import LiteRTLM
@@ -44,9 +45,17 @@ enum LiteRTRuntime {
         "The LiteRT-LM Swift package is not linked into this build, so narration is scripted. "
         + "Add \(packageURL) in Xcode under File ▸ Add Package Dependencies to enable Gemma."
 
-    /// KV-cache size. 512 is generous for 1–3 sentence replies and keeps the cache small enough
-    /// that engine setup stays sub-second on the GPU backend.
-    static let maxNumTokens = 512
+    /// KV-cache size, in tokens, covering **prompt *and* reply** — not just the reply.
+    ///
+    /// This was 512, sized against "1–3 short sentences of output". That was the wrong quantity:
+    /// the cache also has to hold the system message, the few-shot examples, and the grounded
+    /// facts, which together run well past 512. The symptom was not an error naming the cause but
+    /// `sendMessage` returning null from the native layer, which surfaced as scripted replies from
+    /// an engine that had loaded perfectly.
+    ///
+    /// 4096 is still small against Gemma 4's 128K context and costs little memory, while leaving
+    /// generous headroom over the longest prompt Nudgy builds.
+    static let maxNumTokens = 4096
 
     /// Low on purpose. Nudgy is not looking for creative phrasing — every extra degree of
     /// sampling entropy is another chance at an invented number that `SafetyGuard` then has to
@@ -142,6 +151,7 @@ final class LiteRTGemmaModel: NudgyLanguageModel {
     /// ~1.45 GB resident on GPU), so it is never called from app launch — the provider calls it
     /// the first time narration is actually wanted.
     func prepare() async throws {
+        DiagnosticLog.note("prepare: begin engine=\(self.engine == nil ? "nil" : "ready")"); LanguageModelProvider.log.info("prepare: begin, engine=\(self.engine == nil ? "nil" : "ready", privacy: .public)")
         if engine != nil { return }
         if let preparation {
             try await preparation.value
@@ -174,8 +184,10 @@ final class LiteRTGemmaModel: NudgyLanguageModel {
         throw LanguageModelError.unsupportedEnvironment(LiteRTRuntime.simulatorExplanation)
         #else
         guard let modelURL = modelManager.readyModelURL else {
+            DiagnosticLog.note("loadEngine: NO MODEL URL availability=\(String(describing: self.modelManager.availability))"); LanguageModelProvider.log.error("loadEngine: no ready model URL — manager says \(String(describing: self.modelManager.availability), privacy: .public)")
             throw LanguageModelError.modelFileMissing
         }
+        DiagnosticLog.note("loadEngine: model at \(modelURL.path)"); LanguageModelProvider.log.info("loadEngine: model at \(modelURL.lastPathComponent, privacy: .public)")
 
         var failures: [String] = []
         // GPU first: 56.5 tok/s decode and 0.3 s TTFT on an iPhone 17 Pro, against a CPU backend
@@ -191,10 +203,15 @@ final class LiteRTGemmaModel: NudgyLanguageModel {
                 )
                 let engine = Engine(engineConfig: engineConfig)
                 try await engine.initialize()
+                DiagnosticLog.note("loadEngine: \(backend.displayName) INITIALISED"); LanguageModelProvider.log.info("loadEngine: \(String(describing: backend), privacy: .public) backend initialised")
                 self.engine = engine
                 self.activeBackend = backend
                 return
             } catch {
+                DiagnosticLog.note("loadEngine: \(backend.displayName) FAILED — \(error.localizedDescription)")
+                LanguageModelProvider.log.error(
+                    "loadEngine: \(backend.displayName, privacy: .public) failed — \(error.localizedDescription, privacy: .public)"
+                )
                 failures.append("\(backend.displayName): \(error.localizedDescription)")
             }
         }
@@ -220,6 +237,11 @@ final class LiteRTGemmaModel: NudgyLanguageModel {
     // MARK: Generation
 
     private func generate(_ prompt: GroundedPrompt) async throws -> String {
+        // Prepare on demand. `prepare()` is kicked off at launch but not awaited — it loads 2.4 GB
+        // and blocking startup on it would be worse. Without this, any request arriving before it
+        // finished threw, and the caller quietly fell back to a template: the model was loaded and
+        // reported as ready, yet every early message was scripted.
+        if engine == nil { try await prepare() }
         guard let engine else {
             throw LanguageModelError.engineInitializationFailed("No engine after prepare().")
         }
@@ -227,6 +249,7 @@ final class LiteRTGemmaModel: NudgyLanguageModel {
         defer { Task { await self.gate.release() } }
 
         do {
+            DiagnosticLog.note("generate: sending, prompt chars=\(prompt.systemMessage.count + prompt.userMessage.count) budget=\(LiteRTRuntime.maxNumTokens) tokens"); LanguageModelProvider.log.info("generate: engine ready, sending")
             let config = try conversationConfig(for: prompt)
             let conversation = try await engine.createConversation(with: config)
             let response = try await conversation.sendMessage(Message(prompt.userMessage))
@@ -270,6 +293,7 @@ final class LiteRTGemmaModel: NudgyLanguageModel {
     /// dropped well below the narration setting because this is a constrained-format answer, not
     /// a piece of writing.
     func completeRaw(prompt: String) async throws -> String {
+        if engine == nil { try await prepare() }
         guard let engine else {
             throw LanguageModelError.engineInitializationFailed("No engine after prepare().")
         }
