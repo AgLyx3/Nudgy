@@ -350,3 +350,82 @@ The product is successful if users trust the assistant because it is:
 - Calm.
 - Useful for daily health actions.
 - Careful about what it does not know.
+
+---
+
+## Amendments Made During Implementation
+
+This section records where the built product diverges from the specification above, and why. The
+original text is left unedited: it is the statement of intent, and knowing what was changed is more
+useful than a document that quietly agrees with the code.
+
+### 1. Individual approval replaced by tiered activation
+
+**Specified:** "User review before activation", "Every generated reminder must be approved
+individually in v1", and "Fully automated reminder creation without user review" under Excluded.
+
+**Built:** proposals are sorted into three tiers. Unambiguous, fully-timed reminders schedule
+themselves on import; only cross-source conflicts and missing details wait for a person; as-needed
+medications are kept as records and never given a time.
+
+**Why:** the real Synthea patient produced eighteen proposals. Eighteen cards is not review — by
+the sixth, people tap Approve without reading, which is worse for safety than reviewing the two
+that matter. Approval did not disappear, it moved to where it is cheap: a running reminder shows
+where it came from and can be retimed or stopped from its card or its notification.
+
+**The line held:** a proposal where two clinics recorded different instructions is *never*
+auto-activated. That is the case where a human is genuinely worth the interruption.
+
+### 2. Voice input cut
+
+**Specified:** "Voice and text conversation inside the app", and "Make voice primary for quick
+capture".
+
+**Built:** text input and spoken read-back. Dictation is preserved at
+`ios/Deferred/SpeechCapture.swift`, outside the build target.
+
+**Why:** dictation sits outside the connect → cite → propose → approve → notify loop the product is
+judged on, while carrying the most failure modes in the app — audio session lifecycle, two
+permission flows, on-device availability that varies by locale, and no microphone in the Simulator.
+Typing is also the better default for the field people most need to get exactly right: a dose.
+
+This does not affect the on-device model. Gemma narrates proposals and answers questions in text;
+voice input was never what justified it.
+
+### 3. Gemma proposes reminder times
+
+**Specified:** "The assistant may suggest convenient reminder windows from non-clinical context,
+but must label them as convenience suggestions."
+
+**Built:** exactly that, with the model doing the choosing. Gemma is given the medication, the
+record's own instruction, any meal anchor the chart named, the times of the person's other
+reminders, and any routine they have mentioned — and picks times that space around them. The result
+is schema-validated (right count, waking hours, spaced apart) with deterministic spacing as the
+floor, so a reminder always arrives able to fire.
+
+**The line held:** provenance stays `.convenienceSuggestion`, the chip reads "My suggestion", and
+the clock renders muted rather than sage. `SafetyGuard` permits Gemma to say "I've set this for
+9:30" and still refuses "your chart says 9:30". Doses remain strict under every framing.
+
+### 4. Nutrition added
+
+**Specified:** medication and PT reminders.
+
+**Built:** diet guidance as a third item type. Care-plan diet activities, `NutritionOrder` including
+`excludeFoodModifier`, and food allergies become meal-anchored cards.
+
+**Why:** the data was already there and being discarded — the real Synthea patient carries a
+"Diabetic diet" and a "Dietary Approaches to Stop Hypertension diet", both cited care-plan entries,
+which the therapy parser skipped because they are not exercise.
+
+**The line held:** Nudgy restates, it does not compose. Nothing is inferred from a diagnosis —
+"diabetic" does not become "avoid sugar" — and hydration reminders are deliberately absent, because
+hydration is almost never in a chart and generating one would be inventing health advice. It
+remains available through user-created reminders, where the person is the source.
+
+### 5. Tross declined
+
+**Specified:** an open question pending due diligence.
+
+**Decided:** not adopted. Its value is breadth; Nudgy's is trust. Full reasoning, and the one
+condition that would reopen it, are in `ROADMAP.md`.
