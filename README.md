@@ -7,6 +7,33 @@ Health data stays on the phone. The language model runs on the phone. Nothing le
 
 ---
 
+## Why the model runs locally
+
+**Gemma 4 E2B runs on the device itself — not because it is a neat trick, but because sending the
+data anywhere would defeat the product.**
+
+A cloud model would mean uploading someone's medication list, their diagnoses by implication, and
+their questions about them, to a third party. Not one message: every reminder, every follow-up,
+every "why am I taking this", indefinitely. No amount of encryption in transit changes the fact
+that the data arrived somewhere else and was readable when it got there.
+
+So the model is on the phone, the vault is on the phone, and the only network access in the entire
+app is downloading the model's own weights — a public file that contains nothing about anyone.
+`EgressPolicy` is the single place any request is allowed, and it is enforced rather than
+documented: no host in it is permitted to receive health data.
+
+The consequence is testable in about ten seconds. **Put the phone in airplane mode and ask it a
+question — it still answers**, because nothing in the loop ever needed a network. The notification
+screenshot below was taken that way, with the aeroplane visible in the status bar.
+
+This costs something, and the trade is deliberate. A 2.4 GB model has to be downloaded once, the
+engine takes about five seconds to load, and Gemma 4 E2B is smaller than anything a datacentre
+would run. Nudgy is built so that smallness does not matter: the model never decides a dose, a
+frequency, or an instruction — those are computed from the record — so its job is phrasing, and a
+2 B model phrases perfectly well.
+
+---
+
 ## The idea in one diagram
 
 The hardest requirement in `DESIGN_DOC.md` is not the FHIR import or the notifications — it is
