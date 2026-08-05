@@ -300,11 +300,31 @@ final class NotificationScheduler: ObservableObject {
     /// It still takes an `ApprovedReminder`. Even the demo path cannot conjure an unapproved alarm.
     @discardableResult
     func debugFireSoon(_ reminder: ApprovedReminder, after seconds: TimeInterval = 10) async throws -> String {
-        let identifier = Self.demoIdentifier(for: reminder.id)
-        center.removePendingNotificationRequests(withIdentifiers: [identifier])
+        // Unique per send, rather than one identifier per reminder.
+        //
+        // A constant identifier meant each test *replaced* the previous request instead of adding
+        // one, and only pending requests were cleared — a delivered notification stayed in
+        // Notification Center and later sends collapsed onto it. The symptom was a test that
+        // worked once or twice and then appeared to stop.
+        let identifier = "\(Self.demoIdentifier(for: reminder.id)).\(Int(Date().timeIntervalSince1970))"
+
+        // Clear earlier test sends, delivered as well as pending, so the tray does not accumulate
+        // and nothing groups onto a stale banner.
+        let stale = await center.pendingNotificationRequests()
+            .map(\.identifier)
+            .filter { $0.hasPrefix(Self.demoIdentifier(for: reminder.id)) }
+        let delivered = await center.deliveredNotifications()
+            .map(\.request.identifier)
+            .filter { $0.hasPrefix(Self.demoIdentifier(for: reminder.id)) }
+        center.removePendingNotificationRequests(withIdentifiers: stale)
+        center.removeDeliveredNotifications(withIdentifiers: delivered)
 
         let demoContent = content(for: reminder, slotIndex: 0)
         demoContent.userInfo[Self.demoKey] = true
+        // No thread grouping for a test send. Grouping is right for a twice-daily medication —
+        // one stack rather than two banners — but it is what makes a repeated test look like it
+        // stopped working, because the new banner collapses under the old one.
+        demoContent.threadIdentifier = identifier
 
         let request = UNNotificationRequest(
             identifier: identifier,
