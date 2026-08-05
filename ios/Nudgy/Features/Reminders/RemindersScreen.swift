@@ -10,6 +10,8 @@ struct RemindersScreen: View {
     @State private var showStatus = false
     @State private var filter: Filter = .scheduled
     @State private var isAddingReminder = false
+    /// Slots lifted from the reminder a notification asked us to retime.
+    @State private var notificationEditSlots: [ProposedSlot] = []
 
     /// Two genuinely different things share this tab: a timetable, and a list of things you have
     /// on hand for when you need them. Mixing them made the timetable unreadable.
@@ -50,6 +52,38 @@ struct RemindersScreen: View {
         .background(NudgyTheme.Palette.background.ignoresSafeArea())
         .sheet(isPresented: $showStatus) {
             PrivacySheet(status: session.status, provider: session.languageProvider)
+        }
+        // "Change the time" on a notification opens the app; this is what it opens *to*. Without
+        // it the action is a dead end, which is worse than not offering it.
+        .onChange(of: session.pendingTimeEditReminderID) { _, id in
+            guard let id,
+                  let reminder = session.activeReminders.first(where: { $0.id == id })
+            else { return }
+            notificationEditSlots = reminder.times.enumerated().map { index, time in
+                ProposedSlot(
+                    id: "\(reminder.id)#\(index)",
+                    timeOfDay: time,
+                    provenance: .patternNoticed(basis: "you picked this"),
+                    label: reminder.times.count == 1
+                        ? "Daily reminder"
+                        : "Reminder \(index + 1) of \(reminder.times.count)"
+                )
+            }
+        }
+        .sheet(
+            isPresented: Binding(
+                get: { session.pendingTimeEditReminderID != nil },
+                set: { if !$0 { session.pendingTimeEditReminderID = nil } }
+            )
+        ) {
+            if let id = session.pendingTimeEditReminderID,
+               let reminder = session.activeReminders.first(where: { $0.id == id }) {
+                TimesSheet(title: reminder.title, slots: $notificationEditSlots)
+                    .onDisappear {
+                        let times = notificationEditSlots.compactMap(\.timeOfDay)
+                        Task { await session.updateTimes(for: reminder, to: times) }
+                    }
+            }
         }
         .sheet(isPresented: $isAddingReminder) {
             AddReminderSheet { title, times in
