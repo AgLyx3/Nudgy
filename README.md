@@ -1,7 +1,7 @@
 # Nudgy
 
 A privacy-first, on-device health assistant for iOS. It turns fragmented patient-portal records
-into calm, source-cited, individually-approved reminders for medications and physical therapy.
+into calm, source-cited reminders for medications, physical therapy, and diet.
 
 Health data stays on the phone. The language model runs on the phone. Nothing leaves it.
 
@@ -32,33 +32,33 @@ FHIR ─► │  DETERMINISTIC CORE (trusted)        │ ─► ReminderProposal
                         ▼  SafetyGuard — reject → deterministic template
 ```
 
-Gemma never decides anything clinical. It never picks a dose, a time, a frequency, or a food
-instruction. Those are computed from FHIR fields, each carrying a `SourceCitation` pointing at the
-exact resource and the verbatim text it came from. Gemma writes the sentence around the answer.
+Gemma never decides a dose, a frequency, or a food instruction. Those are computed from FHIR
+fields, each carrying a `SourceCitation` with the verbatim source text. Gemma phrases the result
+and may choose *when* a reminder fires — labelled as its own suggestion, never as the chart's.
 
-If Gemma is unavailable, the app loses warmth and keeps correctness.
-
-Full reasoning: **[ARCHITECTURE.md](ARCHITECTURE.md)**. Scope decisions: **[ROADMAP.md](ROADMAP.md)**.
+Full reasoning: **[ARCHITECTURE.md](ARCHITECTURE.md)** · Scope decisions: **[ROADMAP.md](ROADMAP.md)**
 
 ---
 
 ## Status
 
-⚠️ **Work in progress.** Subsystems are individually verified; the full target has not been built
-end to end yet. Read the table honestly before running anything.
+Running on a physical iPhone 15 with Gemma 4 E2B on the GPU backend.
 
 | Subsystem | State | How it was verified |
 |---|---|---|
-| Domain model + provenance types | ✅ | Typechecks; provenance is unforgeable by construction |
-| FHIR decoding (R4 subset) | ✅ | Decodes real Synthea bundles + authored portal export |
-| Encrypted vault | ✅ | AES-GCM, Keychain `ThisDeviceOnly`, complete file protection, excluded from backup |
-| Normalizer + proposal engine | ✅ | **Executed** against both real bundles via a CLI harness |
-| Notifications | ✅ | Typechecks against iOS SDK; discreet lock-screen copy |
-| Design system + review UI | ✅ | Typechecks against iOS SDK |
-| Gemma / LiteRT-LM layer | 🚧 | Written; verification in progress |
-| Session wiring + conversation screen | ⬜ | Not started |
-| Full app build + device run | ⬜ | **Not done yet** |
-| SMART on FHIR (real MyChart) | ⬜ | V2 — planned, see ROADMAP |
+| Domain model + provenance | ✅ | Provenance is unforgeable by construction |
+| FHIR decoding (R4 subset) | ✅ | Real Synthea bundles + authored portal export |
+| Encrypted vault | ✅ | AES-GCM, Keychain `ThisDeviceOnly`, excluded from backup |
+| Normalizer + proposal engine | ✅ | **Executed** against both bundles via a CLI harness |
+| Nutrition (diet, allergies, meals) | ✅ | `NutritionOrder` + care-plan diet entries |
+| Tiered activation | ✅ | Unambiguous reminders self-schedule; only conflicts wait |
+| Gemma 4 E2B via LiteRT-LM | ✅ | Running on device, GPU backend, ~5 s engine load |
+| SafetyGuard | ✅ | **29 adversarial cases**, all passing |
+| Gemma-chosen reminder times | ✅ | Schema-validated, deterministic fallback |
+| Notifications | ⚠️ | Scheduled and previewable; delivery under investigation |
+| Adherence ledger + status light | ✅ | Green/amber/red in-app, no streak |
+| Interruption budget | ✅ | One check-in per open, one per 3 days |
+| SMART on FHIR (real MyChart) | ⬜ | V2 — see ROADMAP |
 
 ---
 
@@ -68,45 +68,48 @@ end to end yet. Read the table honestly before running anything.
 open ios/Nudgy.xcodeproj
 ```
 
-iOS 17+, Xcode 16+. No third-party dependencies are required to build.
+iOS 17+, Xcode 16+.
 
-| Environment | Import | Proposal engine | Notifications | Gemma |
+> **Build for arm64 only.** LiteRT-LM's xcframework ships `ios-arm64` and `ios-arm64-simulator`
+> slices with no x86_64. A universal simulator build fails at link time.
+
+| Environment | Import | Engine | Notifications | Gemma |
 |---|---|---|---|---|
 | iOS Simulator | real | real | real | scripted fallback |
-| iPhone (A17 Pro or newer) | real | real | real | **real Gemma 4 E2B** |
+| iPhone (A16+) | real | real | real | **real Gemma 4 E2B** |
 
-### Why Gemma needs a physical device
+### Gemma
 
-LiteRT-LM cannot run inference in the iOS Simulator — the CPU/XNNPACK path throws `INTERNAL` on
-first generation and the GPU path fails to create an engine
-([LiteRT-LM #2504](https://github.com/google-ai-edge/LiteRT-LM/issues/2504)). The app detects this
-and falls back to deterministic narration, labelled "Scripted" in the UI rather than passed off as
-model output. Every other layer is fully exercised in the Simulator.
+LiteRT-LM is vendored as a local package in `ios/ThirdParty/LiteRT-LM`, whose manifest drops
+upstream's macOS binary target so an iOS build does not fetch an unused 44.6 MB artifact.
 
-### Enabling real Gemma
+The weights are **not** in the repo. Get `gemma-4-E2B-it.litertlm` (2.41 GB) from
+[`litert-community/gemma-4-E2B-it-litert-lm`](https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm).
+`GemmaModelManager` looks in Application Support, then the app's Documents directory, then
+downloads. To side-load it rather than wait on Wi-Fi:
 
-1. In Xcode: **File → Add Package Dependencies** → `https://github.com/google-ai-edge/LiteRT-LM`,
-   version 0.13.0 or later. All model code is behind `#if canImport(LiteRTLM)`, so the project
-   builds without this step.
-2. Obtain `gemma-4-E2B-it.litertlm` (2.58 GB) from
-   [`litert-community/gemma-4-E2B-it-litert-lm`](https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm).
-   `GemmaModelManager` will find a side-loaded copy or download it on first launch.
-3. Run on a physical device.
+```sh
+xcrun devicectl device copy to --device <UDID> \
+  --domain-type appDataContainer --domain-identifier app.nudgy.Nudgy \
+  --source ~/NudgyModels/gemma-4-E2B-it.litertlm \
+  --destination Documents/gemma-4-E2B-it.litertlm
+```
 
 Gemma 4 E2B uses Google's mixed 2/4/8-bit mobile quantization derived from QAT checkpoints:
-~607 MB peak RAM on the CPU backend, 56.5 tok/s decode and 0.3 s time-to-first-token on GPU
-(iPhone 17 Pro figures).
+~607 MB peak on CPU, ~1.45 GB on GPU. **Inference cannot run in the Simulator**
+([LiteRT-LM #2504](https://github.com/google-ai-edge/LiteRT-LM/issues/2504)) — the app detects this
+and labels its narration "Scripted" rather than passing templates off as model output.
 
 ---
 
 ## Data
 
-No real patient data exists in this repository, and none should ever be added.
+No real patient data is in this repository, and none should be added.
 
-- **`synthea-glover.json`** — a trimmed bundle from [MITRE Synthea](https://github.com/synthetichealth/synthea),
-  the open-source synthetic patient generator. Fully synthetic; no real person.
+- **`synthea-glover.json`** — trimmed from [MITRE Synthea](https://github.com/synthetichealth/synthea).
+  Fully synthetic.
 - **`portal-export-demo.json`** — hand-authored, tagged `data-origin: authored-demo`, which the app
-  reads and surfaces in the UI so demo data is never mistaken for a chart pull.
+  surfaces in the UI so demo data is never mistaken for a chart pull.
 
 The authored bundle exists because Synthea's `MedicationRequest.dosageInstruction` carries only
 `timing.repeat` — **no instruction text, no food instruction, no time of day**. That gap is not a
@@ -114,28 +117,73 @@ problem to work around; it is the product's central case:
 
 > "Your chart says this is taken once daily. It does not say what time of day."
 
-Real Synthea data drives that path. The authored bundle additionally exercises verbatim dosage
-text, an `ACM` timing code, PT activities with reps and equipment, and a deliberate cross-source
-food-instruction conflict.
+Real Synthea data drives that path. The authored bundle adds verbatim dosage text, an `ACM` timing
+code, PT activities with reps and equipment, a `NutritionOrder` with excluded foods, a food
+allergy, and a deliberate cross-source food-instruction conflict.
+
+---
+
+## Verification
+
+Two Foundation-only harnesses compile the core outside the app and run it against real data:
+
+- **Proposal engine** — executed against both bundles. Confirms as-needed medications produce no
+  schedule, missing time-of-day is never invented, and a cross-source conflict cites both
+  organizations without picking a winner.
+- **SafetyGuard** — 29 adversarial cases. Rejects the design doc's own unsafe example, invented
+  doses, times credited to the chart, and diagnosis language; accepts Nudgy proposing a time as its
+  own idea.
+
+The distinction SafetyGuard enforces is **attribution, not vocabulary**:
+
+| | |
+|---|---|
+| *"I've set this for 9:30 — your other two are at 8:00"* | allowed |
+| *"Your chart says to take this at 9:30"* | rejected |
+| *"I'll remind you at 7:30, which is when your chart says"* | rejected |
+| *"I can remind you to take 850 mg"* | rejected — doses are strict under every framing |
 
 ---
 
 ## Deliberately not built
 
-Per the design doc's exclusions: no diagnosis, no treatment recommendation, no triage, no
-autonomous timing advice, no cloud PHI processing, no SMS/voice reminders, and no reminder that
-activates without individual approval.
+Per the design doc's exclusions: no diagnosis, no treatment recommendation, no triage, no cloud
+PHI processing, no SMS/voice reminders.
 
-Two scope decisions made during the build, both recorded with reasoning:
+Scope decisions made during the build, each recorded with reasoning:
 
-- **Voice input cut from v1** (`ARCHITECTURE.md` §8). It sits outside the
-  connect → cite → propose → approve → notify loop while carrying the most failure modes in the
-  app. Implementation preserved at `ios/Deferred/SpeechCapture.swift`. Spoken read-back is kept.
-- **Tross declined** (`ROADMAP.md`). Its value is breadth; Nudgy's is trust. Direct
-  patient-authorized FHIR keeps the privacy claim literally true.
+- **Voice input cut** (`ARCHITECTURE.md` §8) — outside the core loop, most failure modes in the app.
+  Preserved at `ios/Deferred/SpeechCapture.swift`. Spoken read-back kept.
+- **Tross declined** (`ROADMAP.md`) — its value is breadth, Nudgy's is trust.
+- **Hydration reminders** — almost never in a chart, so Nudgy generating one would be inventing
+  health advice. Available through user-created reminders, where the person is the source.
+- **`silence` check-ins** — implemented but off behind a flag. Weakest evidence, most consequential
+  wording.
 
-Medication-label photo capture is a UI affordance only. The camera opens, a clearly-labelled sample
-draft appears, and no reminder can be created from it.
+Medication-label photo capture is a UI affordance only.
+
+---
+
+## A note for reviewers
+
+Every bug found in this project has been **silent and open**: code placed after an earlier return,
+a dead string constant that could never match after normalization, a published property no view
+read, a recorder never invoked, a policy documented as enforcement but never called. None throw,
+none log, and the app keeps working and reporting itself healthy.
+
+Two examples worth knowing about:
+
+- Chat appeared to know exactly one medication for several builds, because grounding consulted an
+  arbitrary proposal before the name-matching logic beneath it.
+- Gemma loaded correctly and reported "on device" while every reply was scripted, because the KV
+  cache was sized for the reply and not the prompt, and `sendMessage` returned null rather than an
+  error naming the cause.
+
+Reasoning from the code produced four wrong answers to the second one. A diagnostic file written to
+Documents — model state, backend names, rule identifiers, never prompts or record content —
+separated all four causes in a single run.
+
+**When reviewing this codebase, hunt for code that is never reached rather than code that throws.**
 
 ---
 
@@ -144,16 +192,18 @@ draft appears, and no reminder can be created from it.
 ```
 DESIGN_DOC.md            product spec (source of truth for what Nudgy may say)
 ARCHITECTURE.md          how the safety properties are structurally enforced
-ROADMAP.md               data-acquisition scope: V1, V2 MyChart, Tross decision
+ROADMAP.md               data acquisition: V1, V2 MyChart, Tross decision
 ios/Nudgy/
   Core/Models/           domain types; provenance is a type, not a convention
   Core/FHIR/             R4 decoding + HealthSourceConnector seam
   Core/Normalize/        FHIR → domain, capturing citations
   Core/Reminders/        deterministic proposal engine + scheduling
-  Core/Language/         Gemma protocol, LiteRT-LM, SafetyGuard, scripted fallback
+  Core/Language/         Gemma, SafetyGuard, ScheduleProposer, diagnostics
+  Core/Adherence/        outcome ledger, pattern detection, interruption budget
   Core/Vault/            AES-GCM encrypted store
   Core/Privacy/          EgressPolicy — the only place network access is allowed
-  Features/              SwiftUI
+  Features/              SwiftUI: Reminders, Portal, Chat
+ios/ThirdParty/          vendored LiteRT-LM package
 ios/Deferred/            preserved, intentionally outside the build target
 web-prototype/           original static mockup, kept for reference
 ```
