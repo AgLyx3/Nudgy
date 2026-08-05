@@ -12,6 +12,8 @@ struct TimelineEntryView: View {
     var onEdit: (ReminderProposal) -> Void = { _ in }
     var onSkip: (ReminderProposal) -> Void = { _ in }
     var onSpeak: (String) -> Void = { _ in }
+    var onAnswerCheckIn: (NoticedPattern, PatternAnswerOption) -> Void = { _, _ in }
+    var onDismissCheckIn: (NoticedPattern) -> Void = { _ in }
 
     var body: some View {
         switch entry.content {
@@ -40,6 +42,13 @@ struct TimelineEntryView: View {
 
         case .note(let text):
             NoteRow(text: text)
+
+        case .checkIn(let pattern):
+            CheckInCard(
+                pattern: pattern,
+                onAnswer: { onAnswerCheckIn(pattern, $0) },
+                onDismiss: { onDismissCheckIn(pattern) }
+            )
         }
     }
 }
@@ -289,5 +298,90 @@ private struct NoteRow: View {
                 .frame(height: 1)
         }
         .padding(.vertical, 4)
+    }
+}
+
+
+/// Nudgy asking about something it noticed.
+///
+/// A question, never a correction. The wording throughout describes *Nudgy's* uncertainty rather
+/// than the person's behaviour — "this hasn't been coming back to me as done" instead of "you
+/// missed three doses" — because we genuinely cannot tell the difference from here, and pretending
+/// otherwise is both untrue and the fastest way to make someone stop answering.
+private struct CheckInCard: View {
+    /// Weaves a concrete time into an answer when there is one, so the option reads "Yes, move it
+    /// to 9:30." rather than the generic "Yes, move it later." Options that opt out keep their
+    /// open wording — someone asking for a different time has just told us our guess was wrong.
+    static func label(for option: PatternAnswerOption, suggestedTime: DateComponents?) -> String {
+        guard option.acceptsSuggestedTime,
+              let template = option.timeTemplate,
+              let time = suggestedTime,
+              let formatted = ScheduleProposer.format(time) else { return option.text }
+        return String(format: template, formatted)
+    }
+
+    let pattern: NoticedPattern
+    var onAnswer: (PatternAnswerOption) -> Void
+    var onDismiss: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: NudgyTheme.Metric.sm) {
+            HStack(spacing: NudgyTheme.Metric.xs) {
+                Image(systemName: "bubble.left.and.text.bubble.right")
+                    .font(.system(size: 13))
+                    .foregroundStyle(NudgyTheme.Palette.tertiary)
+                Text("SOMETHING I NOTICED")
+                    .font(NudgyTheme.Typeface.labelSmall())
+                    .kerning(0.7)
+                    .foregroundStyle(NudgyTheme.Palette.onSurfaceMuted)
+                Spacer(minLength: 0)
+                Button {
+                    onDismiss()
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(NudgyTheme.Palette.onSurfaceMuted)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Not now")
+            }
+
+            Text(pattern.question)
+                .font(NudgyTheme.Typeface.bodyLarge())
+                .foregroundStyle(NudgyTheme.Palette.onSurface)
+                .fixedSize(horizontal: false, vertical: true)
+
+            // What Nudgy actually observed, stated as a fact about its own inbox.
+            Text(pattern.basis)
+                .font(NudgyTheme.Typeface.labelMedium())
+                .foregroundStyle(NudgyTheme.Palette.onSurfaceMuted)
+
+            VStack(spacing: NudgyTheme.Metric.xs) {
+                ForEach(pattern.answerOptions()) { option in
+                    Button {
+                        onAnswer(option)
+                    } label: {
+                        HStack {
+                            Text(Self.label(for: option, suggestedTime: pattern.suggestedTime))
+                                .font(NudgyTheme.Typeface.bodyMedium())
+                                .foregroundStyle(NudgyTheme.Palette.onSurface)
+                                .multilineTextAlignment(.leading)
+                                .fixedSize(horizontal: false, vertical: true)
+                            Spacer(minLength: 0)
+                        }
+                        .padding(NudgyTheme.Metric.sm)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(
+                            NudgyTheme.Palette.surfaceLow,
+                            in: RoundedRectangle(cornerRadius: NudgyTheme.Metric.radius)
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .padding(NudgyTheme.Metric.lg)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .nudgyCard()
     }
 }

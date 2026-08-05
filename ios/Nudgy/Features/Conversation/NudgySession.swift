@@ -36,6 +36,11 @@ final class NudgySession: ObservableObject {
     let scheduler: NotificationScheduler
     let permission: NotificationPermission
     let ledger = AdherenceLedger()
+    private let detector = LedgerPatternDetector()
+    private let interruptionPolicy = InterruptionPolicy()
+    /// Persisted so cooldowns and backoff survive relaunch — otherwise quitting the app would
+    /// reset every "leave me alone" the user has expressed.
+    @Published private(set) var interruptionHistory = InterruptionHistory()
     private let playback: SpeechPlayback
     private let normalizer: CareRecordNormalizer
     private let engine: ReminderProposalEngine
@@ -79,12 +84,17 @@ final class NudgySession: ObservableObject {
         await permission.refresh()
         await scheduler.refreshPending()
         ledger.materializeElapsed(for: vault.approvedReminders)
+        interruptionHistory = (try? vaultFile(InterruptionHistory.self, "interruptions"))
+            ?? InterruptionHistory()
+        interruptionHistory.checkInsThisAppOpen = 0
 
         greet()
 
         // Model preparation is deliberately off the critical path: the app is fully usable while
         // Gemma loads, and the scripted narrator covers the gap.
         Task { await prepareLanguageModel() }
+
+        defer { considerCheckIn() }
 
         if vault.careRecord == nil {
             await importDemoSources()
@@ -586,6 +596,89 @@ final class NudgySession: ObservableObject {
         await scheduler.refreshPending()
         consume(proposal.id)
         append(.note("Set up \(proposal.title)"))
+    }
+
+    /// Decides whether Nudgy says anything about what it has noticed.
+    ///
+    /// The default answer is silence. `InterruptionPolicy` allows at most one check-in per app
+    /// open and one every three days, applies a fortnight's cooldown once a topic is raised, and
+    /// mutes a topic permanently after two are ignored. When everything is current it returns
+    /// nothing at all — there is deliberately no "all good!" interruption.
+    ///
+    /// Called once per launch, after the ledger has caught up.
+    func considerCheckIn(now: Date = Date()) {
+        let patterns = detector.patterns(
+            in: ledger.events,
+            reminders: vault.approvedReminders,
+            now: now
+        )
+        guard let pattern = interruptionPolicy.selectCheckIn(
+            from: patterns, history: interruptionHistory, now: now
+        ) else { return }
+
+        // Recorded at the moment it is *shown*: a question scrolled past still cost an interruption.
+        interruptionPolicy.record(raised: pattern, in: &interruptionHistory, now: now)
+        persistInterruptions()
+        append(.checkIn(pattern))
+    }
+
+    /// The user answered a check-in. Acts on it, and records that they engaged so the topic is not
+    /// treated as ignored.
+    func answerCheckIn(_ pattern: NoticedPattern, option: PatternAnswerOption) async {
+        interruptionPolicy.record(answered: pattern, with: option.action, in: &interruptionHistory, now: Date())
+        persistInterruptions()
+
+        append(.user(text: option.text, wasSpoken: false))
+
+        switch option.action {
+        case .rescheduleSlot:
+            if let reminder = vault.approvedReminders.first(where: { $0.id == pattern.reminderID }) {
+                if let suggested = pattern.suggestedTime, option.acceptsSuggestedTime {
+                    var times = reminder.times
+                    if !times.isEmpty { times[0] = suggested }
+                    await updateTimes(for: reminder, to: times)
+                    append(.assistant(
+                        text: "Moved. I'll nudge you then instead.",
+                        narrationSource: .staticCopy
+                    ))
+                } else {
+                    pendingTimeEditReminderID = reminder.id
+                    append(.assistant(
+                        text: "Sure — pick whatever time works and I'll use that.",
+                        narrationSource: .staticCopy
+                    ))
+                }
+            }
+
+        case .dismissTopic:
+            append(.assistant(text: option.action.acknowledgement, narrationSource: .staticCopy))
+
+        case .acknowledgeOnly, .markNeedsRefill, .bundleReminders, .suggestCareTeam:
+            // Deliberately inert beyond acknowledgement. Nudgy is a reminder app: it fixes
+            // reminders, and for anything about how someone feels it says so and stops.
+            append(.assistant(text: option.action.acknowledgement, narrationSource: .staticCopy))
+        }
+    }
+
+    /// The check-in was shown and not answered.
+    func dismissCheckIn(_ pattern: NoticedPattern) {
+        interruptionPolicy.record(ignored: pattern, in: &interruptionHistory, now: Date())
+        persistInterruptions()
+        timeline.removeAll {
+            if case .checkIn(let shown) = $0.content { return shown.id == pattern.id }
+            return false
+        }
+    }
+
+    private func persistInterruptions() {
+        let snapshot = interruptionHistory
+        Task.detached {
+            try? EncryptedVault().write(snapshot, to: "interruptions")
+        }
+    }
+
+    private func vaultFile<T: Decodable>(_ type: T.Type, _ name: String) throws -> T? {
+        try EncryptedVault().read(type, from: name)
     }
 
     /// Handles a tap on one of the notification's actions.

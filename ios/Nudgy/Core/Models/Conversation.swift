@@ -18,6 +18,9 @@ struct TimelineEntry: Identifiable, Hashable {
         case photoDraft(PhotoDraft)
         /// A neutral system note, e.g. import finished.
         case note(String)
+        /// Nudgy noticed a pattern and is asking about it. Never more than one at a time, and
+        /// governed by `InterruptionPolicy` — see `NudgySession.considerCheckIn`.
+        case checkIn(NoticedPattern)
     }
 
     let id: String

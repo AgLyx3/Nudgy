@@ -38,7 +38,11 @@ struct ConversationScreen: View {
                             onApprove: { proposal in Task { await session.approve(proposal) } },
                             onEdit: { proposal in Task { await session.edit(proposal) } },
                             onSkip: { proposal in Task { await session.skip(proposal) } },
-                            onSpeak: { text in session.speak(text) }
+                            onSpeak: { text in session.speak(text) },
+                            onAnswerCheckIn: { pattern, option in
+                                Task { await session.answerCheckIn(pattern, option: option) }
+                            },
+                            onDismissCheckIn: { pattern in session.dismissCheckIn(pattern) }
                         )
                         .id(entry.id)
                     }

@@ -314,68 +314,8 @@ struct InterruptionPolicy: Sendable {
     }
 }
 
-/// Persistence wrapper for `InterruptionHistory`.
-///
-/// Main-actor because the UI drives it: a check-in is raised on screen and answered on screen.
-/// Errors are surfaced, never thrown — matching `VaultStore`. If this file cannot be written the
-/// worst case is that Nudgy forgets it already asked, which the per-app-open cap still contains.
-@MainActor
-final class InterruptionHistoryStore {
-    private(set) var history: InterruptionHistory
-    private(set) var lastErrorDescription: String?
-    private(set) var isLoaded = false
+// NOTE: this file previously also defined `InterruptionHistoryStore`, which persisted the history
+// through an `AdherenceVaultPersisting` abstraction declared in a sibling file that never
+// compiled. `NudgySession` owns that persistence directly against `EncryptedVault`, so the
+// indirection bought nothing and the class was removed rather than repaired.
 
-    private let vault: any AdherenceVaultPersisting
-    private let fileName: String
-
-    init(
-        vault: any AdherenceVaultPersisting,
-        fileName: String = AdherenceVaultFile.interruptionHistory,
-        history: InterruptionHistory = InterruptionHistory()
-    ) {
-        self.vault = vault
-        self.fileName = fileName
-        self.history = history
-    }
-
-    func load() {
-        do {
-            if let stored = try vault.read(InterruptionHistory.self, from: fileName) {
-                history = stored
-            }
-            lastErrorDescription = nil
-        } catch {
-            lastErrorDescription = "Could not read the check-in history: \(error)"
-        }
-        // A load is a launch, and a launch is a new app open.
-        history.beginAppOpen()
-        isLoaded = true
-    }
-
-    /// Resets the per-app-open cap. Call from the scene phase becoming `.active`.
-    func beginAppOpen() {
-        history.beginAppOpen()
-    }
-
-    @discardableResult
-    func update<T>(_ body: (inout InterruptionHistory) -> T) -> T {
-        let result = body(&history)
-        save()
-        return result
-    }
-
-    func save() {
-        do {
-            try vault.write(history, to: fileName)
-            lastErrorDescription = nil
-        } catch {
-            lastErrorDescription = "Could not save the check-in history: \(error)"
-        }
-    }
-
-    /// Forgets every mute and every cooldown. Paired with the vault's erase-everything flow.
-    func forgetEverything() {
-        history = InterruptionHistory()
-        save()
-    }
-}
