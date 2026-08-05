@@ -3,34 +3,9 @@
 A privacy-first, on-device health assistant for iOS. It turns fragmented patient-portal records
 into calm, source-cited reminders for medications, physical therapy, and diet.
 
-Health data stays on the phone. The language model runs on the phone. Nothing leaves it.
-
----
-
-## Why the model runs locally
-
-**Gemma 4 E2B runs on the device itself — not because it is a neat trick, but because sending the
-data anywhere would defeat the product.**
-
-A cloud model would mean uploading someone's medication list, their diagnoses by implication, and
-their questions about them, to a third party. Not one message: every reminder, every follow-up,
-every "why am I taking this", indefinitely. No amount of encryption in transit changes the fact
-that the data arrived somewhere else and was readable when it got there.
-
-So the model is on the phone, the vault is on the phone, and the only network access in the entire
-app is downloading the model's own weights — a public file that contains nothing about anyone.
-`EgressPolicy` is the single place any request is allowed, and it is enforced rather than
-documented: no host in it is permitted to receive health data.
-
-The consequence is testable in about ten seconds. **Put the phone in airplane mode and ask it a
-question — it still answers**, because nothing in the loop ever needed a network. The notification
-screenshot below was taken that way, with the aeroplane visible in the status bar.
-
-This costs something, and the trade is deliberate. A 2.4 GB model has to be downloaded once, the
-engine takes about five seconds to load, and Gemma 4 E2B is smaller than anything a datacentre
-would run. Nudgy is built so that smallness does not matter: the model never decides a dose, a
-frequency, or an instruction — those are computed from the record — so its job is phrasing, and a
-2 B model phrases perfectly well.
+**Gemma 4 E2B runs on the device itself, so nothing has to be uploaded to answer a question — put
+the phone in airplane mode and it still works.** Records live in an encrypted local vault; the only
+network access in the app is fetching the model's own weights.
 
 ---
 
@@ -95,11 +70,7 @@ was silence, and silence is ambiguous.
   <img src="docs/screenshots/notification-actions.png" width="300" alt="A reminder notification in airplane mode, with Taken, Remind me later and Stop reminding me">
 </p>
 
-**Note the aeroplane in the status bar.** Records were read, the reminder was scheduled, and the
-notification was delivered with no network at all. Nothing in the loop needs one.
-
-This particular one is the test send, which is why it arrives on demand. Scheduled reminders
-deliver the same way on their repeating calendar trigger.
+Note the aeroplane in the status bar — read, scheduled and delivered with no network.
 
 The body carries the record's own words — *"Your record says: Every four to six hours (qualifier
 value)"* — verbatim rather than tidied up, because a paraphrase is exactly where "with meals"
