@@ -428,6 +428,7 @@ final class NudgySession: ObservableObject {
             return
         }
 
+        DiagnosticLog.note("send: grounded on \"\(context.title)\" facts=\(context.sourceFacts.count)")
         let narration = await narrate(.followUp(
             text,
             about: context,
@@ -500,29 +501,36 @@ final class NudgySession: ObservableObject {
     /// mentions, then simply the first running reminder. Deliberately one item: the prompt builder
     /// is given one thing with its citations, never a dump of everything Nudgy knows.
     private func groundingContext(for question: String) -> ReminderProposal? {
-        if let proposal = mostRecentProposal() { return proposal }
-
-        let reminders = activeReminders
-        guard !reminders.isEmpty else { return nil }
-
         let asked = question.lowercased()
         func names(_ title: String) -> [String] {
-            title.lowercased().split(whereSeparator: { !$0.isLetter })
-                .map(String.init).filter { $0.count > 3 }
+            title.lowercased()
+                .split(whereSeparator: { !$0.isLetter })
+                .map(String.init)
+                .filter { $0.count > 3 }
         }
-        let matched = reminders.first { names($0.title).contains { asked.contains($0) } }
-        // A question can name something still awaiting review, not just something running.
-        if matched == nil,
-           let pending = allProposals.first(where: { names($0.title).contains { asked.contains($0) } }) {
+        func mentioned(_ title: String) -> Bool {
+            names(title).contains { asked.contains($0) }
+        }
+
+        // What the question names wins over what happens to be on screen.
+        //
+        // This ordering is the bug that made Nudgy appear to know exactly one medication. A
+        // proposal card is appended to the timeline at launch and stays there, so consulting
+        // "the most recent proposal" first meant every question — whatever it named — was
+        // answered from that one card. Asking about metformin while a lovastatin card sits
+        // above is a question about metformin.
+        if let reminder = activeReminders.first(where: { mentioned($0.title) }) {
+            return proposal(from: reminder)
+        }
+        if let pending = allProposals.first(where: { mentioned($0.title) }) {
             return pending
         }
 
-        // Naming something narrows the context to it. Asking about the day is a question about
-        // *everything*, and answering it from one arbitrary reminder was the bug: Gemma correctly
-        // described the whole schedule, SafetyGuard correctly rejected every dose that was not in
-        // the single-item context, and the reply silently became a template. The scope of the
-        // grounding has to match the scope of the question.
-        if let matched { return proposal(from: matched) }
+        // Nothing named: a card under discussion is the next best context, then the whole schedule.
+        if let onScreen = mostRecentProposal() { return onScreen }
+
+        let reminders = activeReminders
+        guard !reminders.isEmpty else { return nil }
         return scheduleOverviewProposal(from: reminders)
     }
 

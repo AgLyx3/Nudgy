@@ -142,23 +142,13 @@ final class NotificationScheduler: ObservableObject {
     func registerCategories() {
         let markDone = UNNotificationAction(
             identifier: Self.markDoneActionIdentifier,
-            title: "Mark done",
+            title: "Taken",
             options: []
         )
         let snooze = UNNotificationAction(
             identifier: Self.snoozeActionIdentifier,
-            title: "Snooze 15 min",
+            title: "Remind me later",
             options: []
-        )
-        let notThisTime = UNNotificationAction(
-            identifier: Self.notThisTimeActionIdentifier,
-            title: "Not this time",
-            options: []
-        )
-        let changeTime = UNNotificationAction(
-            identifier: Self.changeTimeActionIdentifier,
-            title: "Change the time",
-            options: [.foreground]
         )
         let stopReminding = UNNotificationAction(
             identifier: Self.stopRemindingActionIdentifier,
@@ -167,7 +157,11 @@ final class NotificationScheduler: ObservableObject {
         )
         let category = UNNotificationCategory(
             identifier: Self.categoryIdentifier,
-            actions: [markDone, snooze, notThisTime, changeTime, stopReminding],
+            // Three, deliberately. iOS stacks these on long-press and past three or four
+            // people stop reading them. "Not this time" and "Change the time" live in the app,
+            // where there is room to distinguish "skip today" from "end this" without a
+            // mis-tap costing someone their reminder.
+            actions: [markDone, snooze, stopReminding],
             intentIdentifiers: [],
             hiddenPreviewsBodyPlaceholder: "Nudgy has a message for you",
             options: [
@@ -336,41 +330,50 @@ final class NotificationScheduler: ObservableObject {
 
     // MARK: - Content
 
-    /// Builds the notification body.
+    /// What the notification says.
     ///
-    /// # What a bystander sees
+    /// ## Two audiences, one notification
     ///
-    /// A lock screen is read by whoever is standing next to you: a coworker, a seatmate, a family
-    /// member you have not told. "Metformin 500 mg — Columbia Primary Care" is a diabetes diagnosis
-    /// and a care relationship, announced to a room, several times a day, forever. The vault is
-    /// AES-encrypted and the model runs on device; it would be absurd to then print the diagnosis on
-    /// the outside of the phone.
+    /// A lock screen is a public surface, and "Metformin 500 mg — Columbia Primary Care" announces
+    /// a diagnosis and a care relationship to whoever is nearby, several times a day. But a
+    /// notification that says nothing cannot be acted on without unlocking, which is most of its
+    /// value gone.
     ///
-    /// So the content is deliberately thin:
+    /// iOS resolves this rather than forcing a choice. With previews set to **When Unlocked** —
+    /// the Face ID default — a stranger sees `hiddenPreviewsBodyPlaceholder` and the owner sees the
+    /// real content the moment they look at it. So the content below is written for the owner, and
+    /// the placeholder is written for the room.
     ///
-    /// - **Title** — `"A gentle nudge"`. Identical for every reminder, so it carries zero
-    ///   information and is safe to reveal even with previews hidden. It also matches the calm tone
-    ///   the design doc asks for, and reads better on a lock screen than the app name alone.
-    /// - **Body** — the *category* of action and where to find the rest: "Time for your medication.
-    ///   Open Nudgy to see which one." A bystander learns that this person takes some medication —
-    ///   true of most adults, and not a condition. The user learns enough to act: something is due
-    ///   now, and it is a med rather than an exercise.
-    /// - **Subtitle** — never set. It is the field most likely to be filled in later with a
-    ///   medication name by someone being helpful.
+    /// **The honest caveat:** if the user sets *Show Previews* to **Always**, the medication name
+    /// will appear on a locked screen. That is their setting to make and we cannot override it —
+    /// but it means this design leans on a system default rather than on a guarantee.
     ///
-    /// Deliberately absent: `reminder.title` (the medication or exercise name), `reminder.body`,
-    /// `sourceLabel` (the treating organization — arguably worse than the drug name, since it can
-    /// imply a specialty), and every `SourceFact`. All of those live behind the unlock, on the card.
-    ///
-    /// The cost is honest: the user must open the app to know which medication. That is the right
-    /// side of the trade for a product whose entire promise is that the health data stays private,
-    /// and the user can always widen previews in iOS Settings if they prefer convenience.
+    /// - **Title** — the medication or exercise, so the notification answers "which one" without
+    ///   being opened.
+    /// - **Subtitle** — the time and where it came from.
+    /// - **Body** — the record's own instruction, verbatim. Not a paraphrase: "with meals" is the
+    ///   part most worth carrying, and it is exactly the part a summary would drop.
     private func content(for reminder: ApprovedReminder, slotIndex: Int) -> UNMutableNotificationContent {
         let content = UNMutableNotificationContent()
-        content.title = "Nudgy"
-        content.body = Self.discreetBody(for: reminder.kind)
-        // Never populated. It is the field someone would later "helpfully" fill with the drug name.
-        content.subtitle = ""
+        content.title = reminder.title
+
+        let time = slotIndex < reminder.times.count
+            ? Self.formatted(reminder.times[slotIndex])
+            : nil
+        content.subtitle = [time, reminder.sourceLabel]
+            .compactMap { $0 }
+            .joined(separator: " · ")
+
+        // The record's own words where there are any, and a plain statement where there are not.
+        // Never an invented instruction.
+        if let instruction = reminder.sourceFacts.first(where: {
+            $0.label.lowercased().contains("instruction")
+        })?.verbatim {
+            content.body = "Your record says: \(instruction)"
+        } else {
+            content.body = Self.discreetBody(for: reminder.kind)
+        }
+
         content.sound = .default
         content.categoryIdentifier = Self.categoryIdentifier
         // Groups a twice-daily medication's two alarms into one stack rather than two.
@@ -397,6 +400,16 @@ final class NotificationScheduler: ObservableObject {
     /// default) the placeholder shows to a stranger and the real body appears the moment the owner
     /// looks at it. So the same notification is discreet in a waiting room and useful in a kitchen,
     /// without us having to choose one.
+    static func formatted(_ components: DateComponents) -> String? {
+        guard let hour = components.hour, let minute = components.minute,
+              let date = Calendar.current.date(
+                from: DateComponents(year: 2000, month: 1, day: 1, hour: hour, minute: minute)
+              ) else { return nil }
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
+    }
+
     static func discreetBody(for kind: ReminderKind) -> String {
         // Deliberately identical for every kind. A body that varied by category would still leak
         // something, and the `kind` parameter is kept so the signature cannot quietly grow into

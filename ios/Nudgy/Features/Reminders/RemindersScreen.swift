@@ -12,6 +12,7 @@ struct RemindersScreen: View {
     @State private var isAddingReminder = false
     /// Slots lifted from the reminder a notification asked us to retime.
     @State private var notificationEditSlots: [ProposedSlot] = []
+    @State private var previewing: ApprovedReminder?
 
     /// Two genuinely different things share this tab: a timetable, and a list of things you have
     /// on hand for when you need them. Mixing them made the timetable unreadable.
@@ -84,6 +85,11 @@ struct RemindersScreen: View {
                         let times = notificationEditSlots.compactMap(\.timeOfDay)
                         Task { await session.updateTimes(for: reminder, to: times) }
                     }
+            }
+        }
+        .sheet(item: $previewing) { reminder in
+            NotificationPreviewSheet(reminder: reminder) {
+                Task { await session.demoFireMostRecent() }
             }
         }
         .sheet(isPresented: $isAddingReminder) {
@@ -241,7 +247,7 @@ struct RemindersScreen: View {
     /// alert for something the user never agreed to.
     private var testNotification: some View {
         Button {
-            Task { await session.demoFireMostRecent() }
+            previewing = session.activeReminders.first
         } label: {
             HStack(spacing: NudgyTheme.Metric.xs) {
                 Image(systemName: "bell.badge")
@@ -551,6 +557,145 @@ private struct AddReminderSheet: View {
         return (0..<timesPerDay).map { index in
             let total = min(startMinutes + step * index, 22 * 60)
             return DateComponents(hour: total / 60, minute: total % 60)
+        }
+    }
+}
+
+
+/// Shows exactly what the notification will say, before sending one.
+///
+/// Two reasons this exists rather than just firing. A reminder fires at a real clock time, so
+/// during a demo there is otherwise nothing to look at; and the interesting part of this design is
+/// the *difference* between what a stranger sees and what the owner sees, which a single banner
+/// cannot show.
+private struct NotificationPreviewSheet: View {
+    let reminder: ApprovedReminder
+    var onSend: () -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    private var timeText: String {
+        reminder.times.first.flatMap(NotificationScheduler.formatted) ?? "Any time"
+    }
+
+    private var instruction: String? {
+        reminder.sourceFacts.first { $0.label.lowercased().contains("instruction") }?.verbatim
+    }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: NudgyTheme.Metric.lg) {
+                    section("WHEN YOUR PHONE IS LOCKED") {
+                        banner(
+                            title: "Nudgy",
+                            subtitle: nil,
+                            body: "Nudgy has a message for you"
+                        )
+                        Text("A stranger glancing at your phone learns only that you use Nudgy.")
+                            .font(NudgyTheme.Typeface.bodyMedium())
+                            .foregroundStyle(NudgyTheme.Palette.onSurfaceVariant)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
+                    section("WHEN FACE ID RECOGNISES YOU") {
+                        banner(
+                            title: reminder.title,
+                            subtitle: "\(timeText) · \(reminder.sourceLabel)",
+                            body: instruction.map { "Your record says: \($0)" }
+                                ?? NotificationScheduler.discreetBody(for: reminder.kind)
+                        )
+                        actionsRow
+                        Text("This only stays hidden while Show Previews is set to When Unlocked, "
+                             + "which is the default. Setting it to Always puts the medication name "
+                             + "on your lock screen.")
+                            .font(NudgyTheme.Typeface.labelMedium())
+                            .foregroundStyle(NudgyTheme.Palette.onSurfaceMuted)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
+                    Button {
+                        onSend()
+                        dismiss()
+                    } label: {
+                        Text("Send one now (about 10 seconds)")
+                    }
+                    .buttonStyle(PrimaryButtonStyle())
+                }
+                .padding(NudgyTheme.Metric.containerMargin)
+            }
+            .background(NudgyTheme.Palette.background)
+            .navigationTitle("Notification preview")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+    }
+
+    private func section<Content: View>(
+        _ title: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: NudgyTheme.Metric.xs) {
+            Text(title)
+                .font(NudgyTheme.Typeface.labelSmall())
+                .kerning(0.7)
+                .foregroundStyle(NudgyTheme.Palette.onSurfaceMuted)
+            content()
+        }
+    }
+
+    /// Approximates the iOS banner so the copy can be judged in something close to its real shape.
+    private func banner(title: String, subtitle: String?, body: String) -> some View {
+        HStack(alignment: .top, spacing: NudgyTheme.Metric.sm) {
+            RoundedRectangle(cornerRadius: 9)
+                .fill(NudgyTheme.Palette.secondaryContainer)
+                .frame(width: 38, height: 38)
+                .overlay {
+                    Image(systemName: "leaf")
+                        .font(.system(size: 16))
+                        .foregroundStyle(NudgyTheme.Palette.primary)
+                }
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(NudgyTheme.Typeface.bodyMedium().weight(.semibold))
+                    .foregroundStyle(NudgyTheme.Palette.onSurface)
+                if let subtitle {
+                    Text(subtitle)
+                        .font(NudgyTheme.Typeface.bodyMedium())
+                        .foregroundStyle(NudgyTheme.Palette.onSurfaceVariant)
+                }
+                Text(body)
+                    .font(NudgyTheme.Typeface.bodyMedium())
+                    .foregroundStyle(NudgyTheme.Palette.onSurfaceVariant)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(NudgyTheme.Metric.sm)
+        .background(NudgyTheme.Palette.surface, in: RoundedRectangle(cornerRadius: 14))
+        .shadow(color: .black.opacity(0.06), radius: 8, y: 3)
+    }
+
+    private var actionsRow: some View {
+        VStack(spacing: 1) {
+            ForEach(["Taken", "Remind me later", "Stop reminding"], id: \.self) { label in
+                Text(label)
+                    .font(NudgyTheme.Typeface.bodyMedium())
+                    .foregroundStyle(label == "Stop reminding"
+                                     ? NudgyTheme.Palette.error
+                                     : NudgyTheme.Palette.onSurface)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 11)
+                    .background(NudgyTheme.Palette.surface)
+            }
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay {
+            RoundedRectangle(cornerRadius: 12).stroke(NudgyTheme.Palette.hairline, lineWidth: 1)
         }
     }
 }
