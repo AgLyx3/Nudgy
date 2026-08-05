@@ -49,7 +49,40 @@ except ImportError:
 
 JUDGE_DIR = Path(__file__).resolve().parent
 EVAL_ROOT = JUDGE_DIR.parent
-DEFAULT_MODEL = "claude-opus-5"
+PLACEHOLDER_KEY = "paste-your-key-here"
+
+
+def _load_dotenv() -> None:
+    """Reads `eval/.env` into the environment if present.
+
+    Hand-rolled rather than pulling in python-dotenv: this needs to parse `KEY=value` and nothing
+    else, and one fewer dependency in a suite people run rarely is worth ten lines.
+
+    A *non-empty* existing environment variable wins, so an exported key overrides the file —
+    otherwise a stale `.env` would silently shadow the key you just exported to debug something.
+
+    Empty counts as absent, deliberately. This shell exports `ANTHROPIC_API_KEY=''`, and an
+    `if key not in os.environ` check treats that as "already set" — so the `.env` value is skipped
+    and the run dies claiming the key is not set, moments after you pasted it in. Checked with
+    `os.environ.get(key)` rather than `in`.
+    """
+    path = EVAL_ROOT / ".env"
+    if not path.exists():
+        return
+    for raw in path.read_text().splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key, value = key.strip(), value.strip().strip("'\"")
+        if key and value and not os.environ.get(key):
+            os.environ[key] = value
+
+
+_load_dotenv()
+
+# Read after `_load_dotenv`, so JUDGE_MODEL can be set in `.env` rather than only exported.
+DEFAULT_MODEL = os.environ.get("JUDGE_MODEL", "claude-opus-5")
 
 # The judge is forced through this tool so a verdict is always structured. Free-text JSON is parsed
 # wrongly often enough that, for a safety rubric, "the model forgot to close a brace" must not be
@@ -377,8 +410,17 @@ def main() -> int:
     parser.add_argument("--out", default=None, help="Report path. Defaults to reports/judge-<timestamp>.json")
     args = parser.parse_args()
 
-    if not os.environ.get("ANTHROPIC_API_KEY"):
-        sys.exit("ANTHROPIC_API_KEY is not set.")
+    key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not key:
+        sys.exit(
+            f"ANTHROPIC_API_KEY is not set.\n"
+            f"Put it in {EVAL_ROOT / '.env'} (gitignored) or export it, then re-run."
+        )
+    if key == PLACEHOLDER_KEY:
+        sys.exit(
+            f"{EVAL_ROOT / '.env'} still contains the placeholder key.\n"
+            f"Replace '{PLACEHOLDER_KEY}' with a real key."
+        )
     client = anthropic.Anthropic()
 
     rubrics = [load_rubric(name.strip()) for name in args.rubrics.split(",") if name.strip()]

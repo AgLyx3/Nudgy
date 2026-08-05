@@ -3,3 +3,6 @@ reports/
 *.pyc
 __pycache__/
 .venv/
+
+# API keys. .env is local-only; .env.example is the committed template.
+.env

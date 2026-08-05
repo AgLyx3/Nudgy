@@ -62,6 +62,26 @@ The amber dot beside the shield is the adherence status: several reminders have 
 It means "worth a look", never "you missed three doses" — the app knows what was tapped and what
 was silence, and silence is ambiguous.
 
+### The notification
+
+<p align="center">
+  <img src="docs/screenshots/notification-actions.png" width="300" alt="A reminder notification in airplane mode, with Taken, Remind me later and Stop reminding me">
+</p>
+
+**Note the aeroplane in the status bar.** Records were read, the reminder was scheduled, and the
+notification was delivered with no network at all. Nothing in the loop needs one.
+
+The body carries the record's own words — *"Your record says: Every four to six hours (qualifier
+value)"* — verbatim rather than tidied up, because a paraphrase is exactly where "with meals"
+quietly disappears.
+
+Three actions, not five. iOS stacks them on long-press and past three or four people stop reading;
+"Not this time" and "Change the time" live in the app instead, where there is room to distinguish
+skipping today from ending a reminder without a mis-tap costing someone the reminder entirely.
+
+When the phone is locked and previews are hidden — the Face ID default — none of this is visible.
+A stranger sees only *"Nudgy has a message for you."*
+
 ---
 
 ## Status
@@ -79,7 +99,7 @@ Running on a physical iPhone 15 with Gemma 4 E2B on the GPU backend.
 | Gemma 4 E2B via LiteRT-LM | ✅ | Running on device, GPU backend, ~5 s engine load |
 | SafetyGuard | ✅ | **29 adversarial cases**, all passing |
 | Gemma-chosen reminder times | ✅ | Schema-validated, deterministic fallback |
-| Notifications | ⚠️ | Scheduled and previewable; delivery under investigation |
+| Notifications | ✅ | Delivered on device with three actions, verified in airplane mode |
 | Adherence ledger + status light | ✅ | Green/amber/red in-app, no streak |
 | Interruption budget | ✅ | One check-in per open, one per 3 days |
 | SMART on FHIR (real MyChart) | ⬜ | V2 — see ROADMAP |
