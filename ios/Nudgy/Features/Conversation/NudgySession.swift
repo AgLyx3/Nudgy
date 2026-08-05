@@ -649,7 +649,21 @@ final class NudgySession: ObservableObject {
 
     // MARK: - Reminders tab
 
-    /// Reminders that are live right now, newest first.
+    /// Reminders that actually fire at a time.
+    ///
+    /// A reminder with no times is not on a schedule — approving an as-needed medication keeps it
+    /// as a record without giving it a slot, and those were leaking into the timetable and showing
+    /// as "Any time". Whether something has a time is the honest split between the two tabs.
+    var scheduledReminders: [ApprovedReminder] {
+        activeReminders.filter { !$0.times.isEmpty }
+    }
+
+    /// Approved but timeless — things kept on the list to be taken when needed.
+    var onDemandReminders: [ApprovedReminder] {
+        activeReminders.filter { $0.times.isEmpty }
+    }
+
+    /// Everything approved and not stopped, whatever its shape.
     var activeReminders: [ApprovedReminder] {
         vault.approvedReminders.filter(\.isActive).sorted { lhs, rhs in
             let l = lhs.times.first.flatMap { ($0.hour ?? 0) * 60 + ($0.minute ?? 0) } ?? Int.max

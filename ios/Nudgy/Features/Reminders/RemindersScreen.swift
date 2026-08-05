@@ -43,7 +43,7 @@ struct RemindersScreen: View {
                     }
                     if filter == .scheduled { feed } else { onDemandList }
                     addYourOwn
-                    if !session.activeReminders.isEmpty { testNotification }
+                    if filter == .scheduled, !session.scheduledReminders.isEmpty { testNotification }
             if let result = session.testSendResult {
                 HStack(alignment: .top, spacing: NudgyTheme.Metric.xs) {
                     Image(systemName: "info.circle")
@@ -143,7 +143,7 @@ struct RemindersScreen: View {
     /// daily slot would turn an as-needed prescription into a standing one.
     private var onDemandList: some View {
         VStack(alignment: .leading, spacing: NudgyTheme.Metric.md) {
-            if session.onDemandProposals.isEmpty {
+            if session.onDemandProposals.isEmpty && session.onDemandReminders.isEmpty {
                 Text("Nothing in your records is listed as taken only when needed.")
                     .font(NudgyTheme.Typeface.bodyMedium())
                     .foregroundStyle(NudgyTheme.Palette.onSurfaceMuted)
@@ -153,6 +153,14 @@ struct RemindersScreen: View {
                     .font(NudgyTheme.Typeface.bodyMedium())
                     .foregroundStyle(NudgyTheme.Palette.onSurfaceVariant)
                     .fixedSize(horizontal: false, vertical: true)
+
+                // Approved-but-timeless reminders belong here too, not in the timetable.
+                ForEach(session.onDemandReminders) { reminder in
+                    OnDemandReminderRow(
+                        reminder: reminder,
+                        onStop: { Task { await session.stopReminding(reminder) } }
+                    )
+                }
 
                 ForEach(session.onDemandProposals) { proposal in
                     OnDemandRow(proposal: proposal)
@@ -170,7 +178,7 @@ struct RemindersScreen: View {
                 .foregroundStyle(NudgyTheme.Palette.tertiary)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("\(session.activeReminders.count) set up · \(session.proposalsNeedingReview.count) to look at")
+                Text("\(session.scheduledReminders.count) set up · \(session.proposalsNeedingReview.count) to look at")
                     .font(NudgyTheme.Typeface.bodyMedium().weight(.medium))
                     .foregroundStyle(NudgyTheme.Palette.onSurface)
                 Text("These are already running. A couple need your eye before I set them.")
@@ -190,7 +198,7 @@ struct RemindersScreen: View {
 
     private var feed: some View {
         VStack(alignment: .leading, spacing: NudgyTheme.Metric.lg) {
-            ForEach(session.activeReminders) { reminder in
+            ForEach(session.scheduledReminders) { reminder in
                 TimelineRow(kind: reminder.kind) {
                     ActiveReminderCard(
                         reminder: reminder,
@@ -266,7 +274,7 @@ struct RemindersScreen: View {
     /// alert for something the user never agreed to.
     private var testNotification: some View {
         Button {
-            previewing = session.activeReminders.first
+            previewing = session.scheduledReminders.first
             if previewing == nil {
                 session.testSendResult = "Approve a reminder first — there's nothing to send yet."
             }
@@ -297,7 +305,7 @@ struct RemindersScreen: View {
             Image(systemName: "calendar")
                 .font(.system(size: 22))
                 .foregroundStyle(NudgyTheme.Palette.outlineVariant)
-            Text(session.activeReminders.isEmpty && session.proposalsNeedingReview.isEmpty
+            Text(session.scheduledReminders.isEmpty && session.proposalsNeedingReview.isEmpty
                  ? "Nothing for today. I'll let you know if that changes."
                  : "That's everything for today.")
                 .font(NudgyTheme.Typeface.bodyMedium())
@@ -719,5 +727,63 @@ private struct NotificationPreviewSheet: View {
         .overlay {
             RoundedRectangle(cornerRadius: 12).stroke(NudgyTheme.Palette.hairline, lineWidth: 1)
         }
+    }
+}
+
+
+/// An approved reminder that deliberately has no time.
+private struct OnDemandReminderRow: View {
+    let reminder: ApprovedReminder
+    var onStop: () -> Void
+    @State private var showSources = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: NudgyTheme.Metric.xs) {
+            HStack(alignment: .top) {
+                Text(reminder.title)
+                    .font(NudgyTheme.Typeface.titleLarge())
+                    .foregroundStyle(NudgyTheme.Palette.onSurface)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: NudgyTheme.Metric.xs)
+                StatusChip(state: .onlyWhenNeeded)
+            }
+
+            Text(reminder.sourceLabel)
+                .font(NudgyTheme.Typeface.bodyMedium())
+                .foregroundStyle(NudgyTheme.Palette.onSurfaceVariant)
+
+            if !reminder.sourceFacts.isEmpty {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) { showSources.toggle() }
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: showSources ? "chevron.down" : "chevron.right")
+                            .font(.system(size: 10, weight: .semibold))
+                        Text(showSources ? "Hide where this came from" : "Where did this come from?")
+                    }
+                    .font(NudgyTheme.Typeface.bodyMedium().weight(.medium))
+                    .foregroundStyle(NudgyTheme.Palette.primary)
+                }
+                .buttonStyle(.plain)
+
+                if showSources {
+                    VStack(alignment: .leading, spacing: NudgyTheme.Metric.xs) {
+                        ForEach(reminder.sourceFacts) { fact in
+                            VerbatimQuote(
+                                label: fact.label,
+                                text: fact.verbatim,
+                                citation: fact.citation
+                            )
+                        }
+                    }
+                }
+            }
+
+            Button("Remove from my list", action: onStop)
+                .buttonStyle(OutlineButtonStyle(tint: NudgyTheme.Palette.onSurfaceVariant))
+        }
+        .padding(NudgyTheme.Metric.md)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .nudgyCard()
     }
 }
