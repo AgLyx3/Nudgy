@@ -468,7 +468,9 @@ final class NudgySession: ObservableObject {
     /// `approvedReminders.last` against a preview built from `activeReminders.first` — makes the
     /// feature actively misleading in exactly the situation it exists for.
     func demoFire(_ reminder: ApprovedReminder) async {
+        DiagnosticLog.note("demoFire: requested for \(reminder.title) times=\(reminder.times.count)")
         let granted = await permission.request()
+        DiagnosticLog.note("demoFire: permission result=\(granted.rawValue)")
         guard granted == .authorized || granted == .provisional else {
             testSendResult = "iOS is blocking notifications for Nudgy. "
                 + "Settings ▸ Notifications ▸ Nudgy ▸ Allow Notifications, then try again."

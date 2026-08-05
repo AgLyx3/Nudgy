@@ -333,9 +333,19 @@ final class NotificationScheduler: ObservableObject {
             trigger: UNTimeIntervalNotificationTrigger(timeInterval: max(1, seconds), repeats: false)
         )
 
+        let settings = await center.notificationSettings()
+        DiagnosticLog.note(
+            "demoFire: authorization=\(settings.authorizationStatus.rawValue) "
+            + "alert=\(settings.alertSetting.rawValue) lockScreen=\(settings.lockScreenSetting.rawValue) "
+            + "notificationCenter=\(settings.notificationCenterSetting.rawValue)"
+        )
+
         do {
             try await center.add(request)
+            let pending = await center.pendingNotificationRequests().count
+            DiagnosticLog.note("demoFire: queued \(identifier) — pending now \(pending)")
         } catch {
+            DiagnosticLog.note("demoFire: center.add THREW \(error.localizedDescription)")
             let failure = NotificationSchedulingError.systemRejected(
                 reminderID: reminder.id,
                 underlyingDescription: error.localizedDescription
