@@ -71,6 +71,13 @@ was silence, and silence is ambiguous.
 **Note the aeroplane in the status bar.** Records were read, the reminder was scheduled, and the
 notification was delivered with no network at all. Nothing in the loop needs one.
 
+**This is the test send, not a scheduled reminder firing.** It exercises the content, the actions,
+and the delivery path, but it uses a one-shot interval trigger rather than the repeating calendar
+trigger a real reminder uses. Those are different code paths and only one of them is confirmed.
+A reminder set for 8:00 AM will not fire until 8:00 AM tomorrow, so the scheduled path cannot be
+observed the same day it is created — which is exactly why the test send exists, and also why it
+is not evidence that the scheduled path works.
+
 The body carries the record's own words — *"Your record says: Every four to six hours (qualifier
 value)"* — verbatim rather than tidied up, because a paraphrase is exactly where "with meals"
 quietly disappears.
@@ -99,7 +106,8 @@ Running on a physical iPhone 15 with Gemma 4 E2B on the GPU backend.
 | Gemma 4 E2B via LiteRT-LM | ✅ | Running on device, GPU backend, ~5 s engine load |
 | SafetyGuard | ✅ | **29 adversarial cases**, all passing |
 | Gemma-chosen reminder times | ✅ | Schema-validated, deterministic fallback |
-| Notifications | ✅ | Delivered on device with three actions, verified in airplane mode |
+| Notifications — test send | ✅ | Delivered on device with three actions, in airplane mode |
+| Notifications — scheduled | ⚠️ | Registered with the system; daily delivery not yet observed |
 | Adherence ledger + status light | ✅ | Green/amber/red in-app, no streak |
 | Interruption budget | ✅ | One check-in per open, one per 3 days |
 | SMART on FHIR (real MyChart) | ⬜ | V2 — see ROADMAP |

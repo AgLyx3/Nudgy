@@ -9,12 +9,16 @@ The folder to point at. Two halves:
 
 ```sh
 cd eval
-swift test                                   # deterministic families
-python3 -m pip install -r judge/requirements.txt
-export ANTHROPIC_API_KEY=...
-python3 judge/run.py --calibrate-only        # check the judge before trusting it
-python3 judge/run.py --source fixtures       # score the authored corpus
+swift test                                        # deterministic families — no key, no network
+
+# Judge. `.venv` already has the SDK; put your key in `.env` (gitignored, loaded automatically).
+cp .env.example .env && $EDITOR .env
+.venv/bin/python judge/run.py --calibrate-only    # measure the judge before trusting it
+.venv/bin/python judge/run.py --source fixtures   # then score the corpus
 ```
+
+A non-empty exported `ANTHROPIC_API_KEY` overrides `.env`. Empty counts as absent — this shell
+exports the variable as `''`, which a naive `in os.environ` check mistakes for "already set".
 
 Machine-readable output lands in `reports/` (gitignored).
 
