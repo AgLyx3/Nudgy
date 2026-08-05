@@ -42,12 +42,8 @@ and may choose *when* a reminder fires — labelled as its own suggestion, never
   <img src="docs/screenshots/chat-gemma-on-device.png" width="300" alt="Gemma answering on device, quoting the record and stating what it does not say">
 </p>
 
-That screenshot is the architecture in one sentence. Gemma 4 E2B, running on an iPhone 15, quotes
-the record verbatim — *"Take as needed."* — and then states what the record **does not** say. The
-card underneath shows `AS NEEDED` with no time and offers "Keep it" rather than "Approve", because
-turning an as-needed prescription into a daily alarm would change what was prescribed.
-
-On-device inference, a citation, and a refusal to invent a time, in one reply.
+Gemma on an iPhone 15, quoting the record verbatim and then saying what it **does not** say.
+On-device inference, a citation, and a refusal to invent a time — in one reply.
 
 Full reasoning: **[ARCHITECTURE.md](ARCHITECTURE.md)** · Scope decisions: **[ROADMAP.md](ROADMAP.md)**
 
@@ -58,11 +54,10 @@ Full reasoning: **[ARCHITECTURE.md](ARCHITECTURE.md)** · Scope decisions: **[RO
 | Reminders | Portal |
 |---|---|
 | <img src="docs/screenshots/reminders-schedule.png" width="290"> | <img src="docs/screenshots/portal-sources.png" width="290"> |
-| Reminders that scheduled themselves, each traceable to its source. Times were chosen by Gemma around the others rather than stacked at a default hour. | Where records come from — and what is honestly *not* connected. Overstating this would undercut the one thing the app asks to be trusted about. |
+| Reminders that scheduled themselves, each traceable to its source. Gemma spaced the times around each other. | Where records come from, and what is honestly *not* connected. |
 
-The amber dot beside the shield is the adherence status: several reminders have gone unanswered.
-It means "worth a look", never "you missed three doses" — the app knows what was tapped and what
-was silence, and silence is ambiguous.
+The amber dot is adherence status: reminders have gone unanswered. It means "worth a look", never
+"you missed three doses" — we know what was tapped and what was silence, and silence is ambiguous.
 
 ### The notification
 
@@ -72,13 +67,10 @@ was silence, and silence is ambiguous.
 
 Note the aeroplane in the status bar — read, scheduled and delivered with no network.
 
-The body carries the record's own words — *"Your record says: Every four to six hours (qualifier
-value)"* — verbatim rather than tidied up, because a paraphrase is exactly where "with meals"
-quietly disappears.
+The body quotes the record verbatim, clumsy phrasing and all — *"Every four to six hours (qualifier
+value)"* — because tidying it up is how "with meals" quietly disappears somewhere else.
 
-Three actions, not five. iOS stacks them on long-press and past three or four people stop reading;
-"Not this time" and "Change the time" live in the app instead, where there is room to distinguish
-skipping today from ending a reminder without a mis-tap costing someone the reminder entirely.
+Three actions, not five: past three or four, people stop reading them.
 
 ### What a stranger sees
 
@@ -86,27 +78,13 @@ skipping today from ending a reminder without a mis-tap costing someone the remi
   <img src="docs/screenshots/lock-screen.png" width="290" alt="The same reminder on a locked phone, naming nothing">
 </p>
 
-The same reminder, on a locked phone:
+The same reminder, locked: **"Nudgy — It's time for one of your reminders. Tap to see it."** No
+medication, no clinic, not even the category.
 
-> **Nudgy** · now
-> It's time for one of your reminders. Tap to see it.
-
-No medication, no clinic, not even the category. Someone glancing at the phone on a desk learns
-only that this person uses an app called Nudgy.
-
-This matters more than it first appears. A lock screen is a public surface, and a medication name
-is not a neutral fact — it implies a condition, and it can be read by a colleague, a relative, or
-anyone sitting opposite on a train, several times a day, for years. Plenty of people would simply
-rather nobody knew they take anything at all.
-
-Encrypting the vault and running the model on device, and then printing the diagnosis on the
-outside of the phone, would be incoherent. So the detail is not withheld, it is **gated**: with
-previews set to *When Unlocked* — the Face ID default — the full content appears the instant the
-owner looks at it, and stays hidden from everyone else.
-
-The honest caveat, which the app states on its preview screen too: a user who sets *Show Previews*
-to **Always** will see the medication name on their lock screen. That is their setting to make and
-it cannot be overridden, so this design leans on a system default rather than a guarantee.
+A medication name implies a condition, and a lock screen is readable by anyone nearby, several
+times a day, for years. So the detail is gated rather than withheld: with previews set to *When
+Unlocked* — the Face ID default — it appears the instant the owner looks. A user who sets previews
+to *Always* will see the name; that is their setting, and the app says so on its preview screen.
 
 ---
 
@@ -217,43 +195,38 @@ The distinction SafetyGuard enforces is **attribution, not vocabulary**:
 
 ## Deliberately not built
 
-Per the design doc's exclusions: no diagnosis, no treatment recommendation, no triage, no cloud
-PHI processing, no SMS/voice reminders.
+Per the design doc: no diagnosis, no treatment recommendation, no triage, no cloud PHI processing,
+no SMS/voice reminders. Photo capture is a UI affordance only.
 
-Scope decisions made during the build, each recorded with reasoning:
+Scope decisions made during the build:
 
-- **Voice input cut** (`ARCHITECTURE.md` §8) — outside the core loop, most failure modes in the app.
-  Preserved at `ios/Deferred/SpeechCapture.swift`. Spoken read-back kept.
+- **Voice input cut** — outside the core loop, most failure modes in the app. Preserved in
+  `ios/Deferred/`; spoken read-back kept.
 - **Tross declined** (`ROADMAP.md`) — its value is breadth, Nudgy's is trust.
-- **Hydration reminders** — almost never in a chart, so Nudgy generating one would be inventing
-  health advice. Available through user-created reminders, where the person is the source.
-- **`silence` check-ins** — implemented but off behind a flag. Weakest evidence, most consequential
-  wording.
+- **Hydration reminders** — almost never in a chart, so generating one would be inventing advice.
+  Available as a user-created reminder, where the person is the source.
+- **`silence` check-ins** — built, off behind a flag. Weakest evidence, most consequential wording.
 
-Medication-label photo capture is a UI affordance only.
+Each is recorded with full reasoning in `DESIGN_DOC.md` §Amendments.
 
 ---
 
 ## A note for reviewers
 
-Every bug found in this project has been **silent and open**: code placed after an earlier return,
-a dead string constant that could never match after normalization, a published property no view
-read, a recorder never invoked, a policy documented as enforcement but never called. None throw,
-none log, and the app keeps working and reporting itself healthy.
+Every bug found here has been **silent and open**: code after an earlier return, a string constant
+that could never match after normalization, a property no view read, a recorder never invoked, a
+policy documented as enforcement and never called. None throw, none log, and the app keeps
+reporting itself healthy.
 
-Two examples worth knowing about:
+Two examples: chat appeared to know exactly one medication for several builds, because grounding
+consulted an arbitrary proposal before the name-matching beneath it. And Gemma loaded, reported "on
+device", and returned scripted text — the KV cache was sized for the reply rather than the prompt,
+and `sendMessage` returned null rather than an error naming the cause.
 
-- Chat appeared to know exactly one medication for several builds, because grounding consulted an
-  arbitrary proposal before the name-matching logic beneath it.
-- Gemma loaded correctly and reported "on device" while every reply was scripted, because the KV
-  cache was sized for the reply and not the prompt, and `sendMessage` returned null rather than an
-  error naming the cause.
+Reasoning from the code gave four wrong answers to the second. A diagnostic file — model state,
+rule identifiers, never prompts or record content — separated all four in one run.
 
-Reasoning from the code produced four wrong answers to the second one. A diagnostic file written to
-Documents — model state, backend names, rule identifiers, never prompts or record content —
-separated all four causes in a single run.
-
-**When reviewing this codebase, hunt for code that is never reached rather than code that throws.**
+**Hunt for code that is never reached, not code that throws.**
 
 ---
 
