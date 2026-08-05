@@ -1,0 +1,5 @@
+reports/
+.build/
+*.pyc
+__pycache__/
+.venv/

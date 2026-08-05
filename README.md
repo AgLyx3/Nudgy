@@ -36,7 +36,31 @@ Gemma never decides a dose, a frequency, or a food instruction. Those are comput
 fields, each carrying a `SourceCitation` with the verbatim source text. Gemma phrases the result
 and may choose *when* a reminder fires — labelled as its own suggestion, never as the chart's.
 
+<p align="center">
+  <img src="docs/screenshots/chat-gemma-on-device.png" width="300" alt="Gemma answering on device, quoting the record and stating what it does not say">
+</p>
+
+That screenshot is the architecture in one sentence. Gemma 4 E2B, running on an iPhone 15, quotes
+the record verbatim — *"Take as needed."* — and then states what the record **does not** say. The
+card underneath shows `AS NEEDED` with no time and offers "Keep it" rather than "Approve", because
+turning an as-needed prescription into a daily alarm would change what was prescribed.
+
+On-device inference, a citation, and a refusal to invent a time, in one reply.
+
 Full reasoning: **[ARCHITECTURE.md](ARCHITECTURE.md)** · Scope decisions: **[ROADMAP.md](ROADMAP.md)**
+
+---
+
+## Screens
+
+| Reminders | Portal |
+|---|---|
+| <img src="docs/screenshots/reminders-schedule.png" width="290"> | <img src="docs/screenshots/portal-sources.png" width="290"> |
+| Reminders that scheduled themselves, each traceable to its source. Times were chosen by Gemma around the others rather than stacked at a default hour. | Where records come from — and what is honestly *not* connected. Overstating this would undercut the one thing the app asks to be trusted about. |
+
+The amber dot beside the shield is the adherence status: several reminders have gone unanswered.
+It means "worth a look", never "you missed three doses" — the app knows what was tapped and what
+was silence, and silence is ambiguous.
 
 ---
 

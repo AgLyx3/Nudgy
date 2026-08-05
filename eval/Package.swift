@@ -37,9 +37,13 @@ let package = Package(
         ),
 
         // Fixture loading, corpus types, and report emission shared by every test target.
+        //
+        // Deliberately does NOT depend on NudgyCore. Fixtures name rules as plain strings, and the
+        // test targets map those onto `SafetyRule` via `@testable import`. That keeps this target
+        // free of Core's internal types, and means a fixture file can be read by the Python judge
+        // in `judge/` with no Swift involved.
         .target(
             name: "EvalKit",
-            dependencies: ["NudgyCore"],
             path: "Sources/EvalKit"
         ),
 
@@ -62,6 +66,13 @@ let package = Package(
             name: "GroundingScopeTests",
             dependencies: ["EvalKit", "NudgyCore"],
             path: "Tests/GroundingScopeTests"
+        ),
+
+        // FHIR bundle → normalizer → proposal engine, pinned against golden snapshots.
+        .testTarget(
+            name: "NormalizerEvalTests",
+            dependencies: ["EvalKit", "NudgyCore"],
+            path: "Tests/NormalizerEvalTests"
         ),
     ]
 )

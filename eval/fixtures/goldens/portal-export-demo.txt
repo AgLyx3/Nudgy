@@ -1,0 +1,191 @@
+patient: Maya Reyes
+sources: Columbia Orthopedics | Columbia Primary Care | Columbia Rehabilitation Medicine | Riverside Endocrinology
+medications: 4
+therapyTasks: 4
+dietaryGuidance: 4
+allergies: Peanut, Penicillin G
+proposals: 11
+
+── nudgy.proposal.medication.MedicationRequest/1f1c9f10-0000-4000-8000-00000000000a
+   kind: medication
+   title: Metformin hydrochloride 500 MG
+   subtitle: Columbia Primary Care · Sample data
+   source: Columbia Primary Care [authoredDemo]
+   provenance: fromYourRecord(MedicationRequest)
+   tier: needsYou
+   needsTimeOfDay: false   asNeeded: false
+   slot: Dose 1 of 2 @ 08:00 [convenienceSuggestion(Nudgy's own default spacing for 2 reminders a day. Your record does not name a time of day. This is a scheduling idea, not health guidance.)] suggestion=8:00
+   slot: Dose 2 of 2 @ 20:00 [convenienceSuggestion(Nudgy's own default spacing for 2 reminders a day. Your record does not name a time of day. This is a scheduling idea, not health guidance.)] suggestion=20:00
+   flag(info): Nudgy's suggested times cluster around 8:00 AM
+   flag(info): Nudgy's suggested times cluster around 8:00 PM
+   flag(possibleConcern): Two of your records describe this differently
+   fact[Food instruction]: "With or after food"
+   fact[How often]: "twice daily"
+   fact[Instruction]: "Take 1 tablet by mouth twice daily with meals."
+   fact[Medication]: "Metformin hydrochloride 500 MG Oral Tablet"
+
+── nudgy.proposal.medication.MedicationRequest/1f1c9f10-0000-4000-8000-00000000000c
+   kind: medication
+   title: Levothyroxine Sodium 0.05 MG
+   subtitle: Columbia Primary Care · Sample data
+   source: Columbia Primary Care [authoredDemo]
+   provenance: fromYourRecord(MedicationRequest)
+   tier: needsYou
+   needsTimeOfDay: true   asNeeded: false
+   slot: Before breakfast @ unset [fromYourRecord(MedicationRequest)] suggestion=7:00
+   fact[Food instruction]: "On an empty stomach, 30 to 60 minutes before breakfast"
+   fact[How often]: "once daily"
+   fact[Instruction]: "Take 1 tablet by mouth once daily on an empty stomach, 30 to 60 minutes before breakfast."
+   fact[Medication]: "Levothyroxine Sodium 0.05 MG Oral Tablet"
+   fact[When in the day]: "Before breakfast"
+
+── nudgy.proposal.medication.MedicationRequest/1f1c9f10-0000-4000-8000-00000000000d
+   kind: medication
+   title: Ibuprofen 400 MG
+   subtitle: Columbia Orthopedics · Sample data
+   source: Columbia Orthopedics [authoredDemo]
+   provenance: needsReview(asNeededMedication)
+   tier: onDemand
+   needsTimeOfDay: false   asNeeded: true
+   schedulingDeclined: asNeededMedication
+   flag(info): No repeating reminder for this one
+   fact[Instruction]: "Take 1 tablet by mouth every 6 hours as needed for pain. Do not exceed 4 tablets in 24 hours."
+   fact[Medication]: "Ibuprofen 400 MG Oral Tablet"
+
+── nudgy.proposal.medication.MedicationStatement/1f1c9f10-0000-4000-8000-00000000000b
+   kind: medication
+   title: Metformin hydrochloride 500 MG
+   subtitle: Riverside Endocrinology · Sample data
+   source: Riverside Endocrinology [authoredDemo]
+   provenance: fromYourRecord(MedicationStatement)
+   tier: needsYou
+   needsTimeOfDay: false   asNeeded: false
+   slot: Dose 1 of 2 @ 08:00 [convenienceSuggestion(Nudgy's own default spacing for 2 reminders a day. Your record does not name a time of day. This is a scheduling idea, not health guidance.)] suggestion=8:00
+   slot: Dose 2 of 2 @ 20:00 [convenienceSuggestion(Nudgy's own default spacing for 2 reminders a day. Your record does not name a time of day. This is a scheduling idea, not health guidance.)] suggestion=20:00
+   flag(info): Nudgy's suggested times cluster around 8:00 AM
+   flag(info): Nudgy's suggested times cluster around 8:00 PM
+   flag(possibleConcern): Two of your records describe this differently
+   fact[How often]: "twice daily"
+   fact[Instruction]: "Take 1 tablet by mouth twice daily."
+   fact[Medication]: "Metformin hydrochloride 500 MG Oral Tablet"
+
+── nudgy.proposal.nutrition.breakfast
+   kind: nutrition
+   title: Breakfast — what your record says about food
+   subtitle: Diabetic diet · avoid Grapefruit and grapefruit juice, Sugar-sweetened beverages · allergic to Peanut
+   source: Columbia Primary Care [authoredDemo]
+   provenance: fromYourRecord(NutritionOrder)
+   tier: ready
+   needsTimeOfDay: false   asNeeded: false
+   slot: Breakfast @ 08:00 [convenienceSuggestion(Nudgy's own default time for breakfast. Your record does not say when you eat.)] suggestion=8:00
+   flag(info): Nudgy's suggested times cluster around 8:00 AM
+   flag(info): This is only what has been written down
+   fact[Diet in your plan]: "Diabetic diet"
+   fact[Recorded food allergy]: "Peanut"
+   fact[Your record says to avoid]: "Grapefruit and grapefruit juice"
+   fact[Your record says to avoid]: "Sugar-sweetened beverages"
+
+── nudgy.proposal.nutrition.dinner
+   kind: nutrition
+   title: Dinner — what your record says about food
+   subtitle: Diabetic diet · avoid Grapefruit and grapefruit juice, Sugar-sweetened beverages · allergic to Peanut
+   source: Columbia Primary Care [authoredDemo]
+   provenance: fromYourRecord(NutritionOrder)
+   tier: ready
+   needsTimeOfDay: false   asNeeded: false
+   slot: Dinner @ 18:30 [convenienceSuggestion(Nudgy's own default time for dinner. Your record does not say when you eat.)] suggestion=18:30
+   flag(info): This is only what has been written down
+   fact[Diet in your plan]: "Diabetic diet"
+   fact[Recorded food allergy]: "Peanut"
+   fact[Your record says to avoid]: "Grapefruit and grapefruit juice"
+   fact[Your record says to avoid]: "Sugar-sweetened beverages"
+
+── nudgy.proposal.nutrition.lunch
+   kind: nutrition
+   title: Lunch — what your record says about food
+   subtitle: Diabetic diet · avoid Grapefruit and grapefruit juice, Sugar-sweetened beverages · allergic to Peanut
+   source: Columbia Primary Care [authoredDemo]
+   provenance: fromYourRecord(NutritionOrder)
+   tier: ready
+   needsTimeOfDay: false   asNeeded: false
+   slot: Lunch @ 12:30 [convenienceSuggestion(Nudgy's own default time for lunch. Your record does not say when you eat.)] suggestion=12:30
+   flag(info): This is only what has been written down
+   fact[Diet in your plan]: "Diabetic diet"
+   fact[Recorded food allergy]: "Peanut"
+   fact[Your record says to avoid]: "Grapefruit and grapefruit juice"
+   fact[Your record says to avoid]: "Sugar-sweetened beverages"
+
+── nudgy.proposal.therapy.CarePlan/1f1c9f10-0000-4000-8000-00000000001a#pendulum-swings
+   kind: therapy
+   title: Pendulum swings
+   subtitle: Right shoulder home exercise program · Columbia Rehabilitation Medicine · Sample data
+   source: Columbia Rehabilitation Medicine [authoredDemo]
+   provenance: fromYourRecord(CarePlan)
+   tier: ready
+   needsTimeOfDay: false   asNeeded: false
+   slot: Session 1 of 3 @ 08:00 [convenienceSuggestion(Nudgy's own default spacing for 3 reminders a day. Your record does not name a time of day. This is a scheduling idea, not health guidance.)] suggestion=8:00
+   slot: Session 2 of 3 @ 14:00 [convenienceSuggestion(Nudgy's own default spacing for 3 reminders a day. Your record does not name a time of day. This is a scheduling idea, not health guidance.)] suggestion=14:00
+   slot: Session 3 of 3 @ 20:00 [convenienceSuggestion(Nudgy's own default spacing for 3 reminders a day. Your record does not name a time of day. This is a scheduling idea, not health guidance.)] suggestion=20:00
+   flag(info): Nudgy's suggested times cluster around 8:00 AM
+   flag(info): Nudgy's suggested times cluster around 8:00 PM
+   flag(info): Your record does not name a time of day
+   flag(info): Your record does not name any equipment
+   fact[Body position]: "Bend forward at the waist, let the right arm hang down, and swing gently in small circles."
+   fact[Exercise]: "Pendulum swings"
+   fact[How many]: "10 circles each direction"
+   fact[How often]: "three times daily"
+   fact[How to do it]: "Bend forward at the waist, let the right arm hang down, and swing gently in small circles. 10 circles each direction. Perform 3 times daily. No equipment needed."
+
+── nudgy.proposal.therapy.CarePlan/1f1c9f10-0000-4000-8000-00000000001a#resistance-band-external-rotation
+   kind: therapy
+   title: Resistance band external rotation
+   subtitle: Right shoulder home exercise program · Columbia Rehabilitation Medicine · Sample data
+   source: Columbia Rehabilitation Medicine [authoredDemo]
+   provenance: fromYourRecord(CarePlan)
+   tier: ready
+   needsTimeOfDay: false   asNeeded: false
+   slot: Daily session @ 09:00 [convenienceSuggestion(Nudgy's own default spacing for 1 reminder a day. Your record does not name a time of day. This is a scheduling idea, not health guidance.)] suggestion=9:00
+   flag(info): Nudgy's suggested times cluster around 9:00 AM
+   flag(info): Your record does not name a time of day
+   fact[Equipment named]: "resistance band"
+   fact[Exercise]: "Resistance band external rotation"
+   fact[How many]: "15 repetitions"
+   fact[How often]: "once daily"
+   fact[How to do it]: "Using the green resistance band anchored at elbow height, keep the elbow at your side and rotate the forearm outward. 15 repetitions, once daily."
+
+── nudgy.proposal.therapy.CarePlan/1f1c9f10-0000-4000-8000-00000000001a#scapular-retraction
+   kind: therapy
+   title: Scapular retraction
+   subtitle: Right shoulder home exercise program · Columbia Rehabilitation Medicine · Sample data
+   source: Columbia Rehabilitation Medicine [authoredDemo]
+   provenance: fromYourRecord(CarePlan)
+   tier: ready
+   needsTimeOfDay: false   asNeeded: false
+   slot: Session 1 of 2 @ 08:00 [convenienceSuggestion(Nudgy's own default spacing for 2 reminders a day. Your record does not name a time of day. This is a scheduling idea, not health guidance.)] suggestion=8:00
+   slot: Session 2 of 2 @ 20:00 [convenienceSuggestion(Nudgy's own default spacing for 2 reminders a day. Your record does not name a time of day. This is a scheduling idea, not health guidance.)] suggestion=20:00
+   flag(info): Nudgy's suggested times cluster around 8:00 AM
+   flag(info): Nudgy's suggested times cluster around 8:00 PM
+   flag(info): Your record does not name a time of day
+   flag(info): Your record does not name any equipment
+   fact[Body position]: "Sit upright and squeeze the shoulder blades together."
+   fact[Exercise]: "Scapular retraction"
+   fact[How many]: "10 repetitions"
+   fact[How often]: "twice daily"
+   fact[How to do it]: "Sit upright and squeeze the shoulder blades together. Hold 5 seconds, then relax. 10 repetitions, 2 times daily."
+
+── nudgy.proposal.therapy.CarePlan/1f1c9f10-0000-4000-8000-00000000001a#wall-slides
+   kind: therapy
+   title: Wall slides
+   subtitle: Right shoulder home exercise program · Columbia Rehabilitation Medicine · Sample data
+   source: Columbia Rehabilitation Medicine [authoredDemo]
+   provenance: fromYourRecord(CarePlan)
+   tier: needsYou
+   needsTimeOfDay: false   asNeeded: false
+   slot: Daily session @ 09:00 [convenienceSuggestion(Nudgy's own default spacing for 1 reminder a day. Your record does not name a time of day. This is a scheduling idea, not health guidance.)] suggestion=9:00
+   flag(info): Nudgy's suggested times cluster around 9:00 AM
+   flag(possibleConcern): Your record does not describe how to do this
+   flag(info): Your record does not name a time of day
+   flag(info): Your record does not name any equipment
+   fact[Exercise]: "Wall slides"
+   fact[How often]: "once daily"
+   fact[How to do it]: "Perform daily as instructed in clinic."
