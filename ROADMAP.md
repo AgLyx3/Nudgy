@@ -159,6 +159,72 @@ requires a direct conversation and likely an NDA. It cannot be validated on a ha
 
 ---
 
+## Considered: ingredient-level matching
+
+**Status: not built. Recorded because the evaluation was informative and the case will get stronger
+with real data.**
+
+Nudgy currently reconciles medications by their display string. The question was whether to switch
+to RxNorm codes, on the theory that real portals write the same drug differently. Measured against
+all 111 Synthea patients before building anything:
+
+```
+3,274 medication codings · 95 distinct RxNorm codes · 95 distinct display strings
+codes written with more than one display string:  0
+display strings mapping to more than one code:    0
+```
+
+**Identity matching by code would be a no-op**, at least here. Synthea emits canonical strings from
+one table, so string and code agree perfectly. This measurement says nothing about real portals —
+it says Synthea cannot test the question.
+
+The same pass surfaced something better. **14 of 111 patients (12.6%) hold two or more *active*
+products sharing an ingredient:**
+
+```
+Donte636   Acetaminophen 300 MG / Codeine
+           Acetaminophen 300 MG / Hydrocodone
+           Acetaminophen 325 MG / Oxycodone      [Percocet]
+           Acetaminophen 325 MG                  [Tylenol]
+
+Ursula220  Simvastatin 10 MG + Simvastatin 20 MG
+```
+
+Only one of Donte's four says "Tylenol". An ingredient hidden inside a combination product is
+invisible in the brand name, which is exactly why this is worth surfacing and exactly why a person
+would not spot it themselves.
+
+### What could be said, and what could not
+
+Stating the overlap is a fact derivable from the record's own coded data, and sits in the same
+category as the existing cross-source conflict flag — it names a discrepancy without adjudicating
+it:
+
+> Three of your medications list **acetaminophen** as an ingredient: Percocet, Tylenol, and the
+> hydrocodone tablet. Your pharmacist can tell you whether that is intended.
+
+What Nudgy must not say is anything about maximum daily doses or consequences. That is clinical,
+and it needs the approved drug knowledge base `DESIGN_DOC.md` defers.
+
+### When to build it
+
+**When medication names get messy** — that is, with real portal data rather than a generator. Two
+things become true at once: display strings stop agreeing, so code-based identity starts earning
+its keep; and combination products appear under brand names, so ingredient overlap becomes harder
+for a person to see and more valuable to surface.
+
+At that point the mapping should come from RxNorm `has_ingredient` relationships rather than the
+first-token heuristic used in the evaluation above, which works only because Synthea's strings are
+canonical. An MCP server such as [`medical-mcp`](https://github.com/JamesANZ/medical-mcp) or a
+DailyMed server can build that map **at development time**, shipped as a bundled table — never a
+runtime lookup, which would send a medication name off the device and break the claim in §V1.
+
+Note the demo data does not currently show this: Terry Glover holds only one acetaminophen product.
+Demonstrating it would mean switching to a patient like Donte636 or adding a second
+acetaminophen-containing medication to the authored bundle.
+
+---
+
 ## Deferred (per design doc)
 
 - On-device OCR for medication labels. v1 ships the camera affordance with clearly-labelled sample
