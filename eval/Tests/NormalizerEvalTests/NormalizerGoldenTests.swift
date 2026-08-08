@@ -1,6 +1,6 @@
 import XCTest
 import EvalKit
-@testable import NudgyCore
+@testable import RemliCore
 
 /// FHIR bundle → `CareRecordNormalizer` → `ReminderProposalEngine`, pinned against golden snapshots.
 ///
@@ -21,7 +21,7 @@ import EvalKit
 ///
 /// Regenerate after an intentional change:
 ///
-///     NUDGY_EVAL_UPDATE_GOLDENS=1 swift test --filter NormalizerEvalTests
+///     REMLI_EVAL_UPDATE_GOLDENS=1 swift test --filter NormalizerEvalTests
 ///
 /// then read the diff before committing it. A golden updated without reading the diff is worse than
 /// no golden, because it launders a regression into the baseline.
@@ -31,13 +31,13 @@ final class NormalizerGoldenTests: XCTestCase {
     private let fixedImportDate = Date(timeIntervalSince1970: 1_700_000_000)
 
     private var sampleDataDirectory: URL {
-        // eval/Tests/NormalizerEvalTests/… → repo root → ios/Nudgy/Resources/SampleData
+        // eval/Tests/NormalizerEvalTests/… → repo root → ios/Remli/Resources/SampleData
         URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
             .deletingLastPathComponent()
             .deletingLastPathComponent()
-            .appendingPathComponent("ios/Nudgy/Resources/SampleData", isDirectory: true)
+            .appendingPathComponent("ios/Remli/Resources/SampleData", isDirectory: true)
     }
 
     private func descriptor(
@@ -260,7 +260,7 @@ final class NormalizerGoldenTests: XCTestCase {
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let url = directory.appendingPathComponent("\(name).txt")
 
-        if ProcessInfo.processInfo.environment["NUDGY_EVAL_UPDATE_GOLDENS"] != nil {
+        if ProcessInfo.processInfo.environment["REMLI_EVAL_UPDATE_GOLDENS"] != nil {
             try rendered.write(to: url, atomically: true, encoding: .utf8)
             print("golden updated: \(url.path) — read the diff before committing")
             return
@@ -284,7 +284,7 @@ final class NormalizerGoldenTests: XCTestCase {
                 \(firstDifference(expected: expected, actual: rendered))
 
                 If this change is intentional:
-                  NUDGY_EVAL_UPDATE_GOLDENS=1 swift test --filter NormalizerEvalTests
+                  REMLI_EVAL_UPDATE_GOLDENS=1 swift test --filter NormalizerEvalTests
                 and read the diff before committing.
                 """
             )

@@ -46,7 +46,7 @@
     },
     {
       "id": "known-scheduling-duration-come-back-phrasing",
-      "rationale": "FINDING B. `isSchedulingDuration` only applies inside a sentence `isNudgyOffer` recognises, and that list has ' i will remind' but not ' i will come back'. So the 15-minute snooze interval reads as an ungrounded clinical number in this phrasing. 'I will remind you again in 15 minutes', 'I can check back in 15 minutes' and 'I have set a follow-up for 15 minutes from now' all pass, so this is a phrase-list coverage gap rather than a structural one. Candidate fix: add ' i will come back' and ' i will check' to the offer list.",
+      "rationale": "FINDING B. `isSchedulingDuration` only applies inside a sentence `isRemliOffer` recognises, and that list has ' i will remind' but not ' i will come back'. So the 15-minute snooze interval reads as an ungrounded clinical number in this phrasing. 'I will remind you again in 15 minutes', 'I can check back in 15 minutes' and 'I have set a follow-up for 15 minutes from now' all pass, so this is a phrase-list coverage gap rather than a structural one. Candidate fix: add ' i will come back' and ' i will check' to the offer list.",
       "facts": [
         "Kind: medication",
         "Name: Lisinopril",

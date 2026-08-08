@@ -6,7 +6,7 @@ Vendored dependencies, checked in rather than resolved from the network.
 
 `LiteRT-LM/` is a local Swift package mirroring
 [google-ai-edge/LiteRT-LM](https://github.com/google-ai-edge/LiteRT-LM) at tag **v0.14.0**.
-`Nudgy.xcodeproj` references it via `XCLocalSwiftPackageReference` (relative path
+`Remli.xcodeproj` references it via `XCLocalSwiftPackageReference` (relative path
 `ThirdParty/LiteRT-LM`), not as a remote package.
 
 ### What is here
@@ -51,7 +51,7 @@ the wrapper depend on it under `.when(platforms: [.macOS])`. That target is **re
 
 SwiftPM downloads every declared `binaryTarget` at resolve time regardless of its platform
 condition, so an iOS-only app still pays for the macOS framework. On a slow connection that is
-several minutes for something nothing links against. Nudgy has no macOS target.
+several minutes for something nothing links against. Remli has no macOS target.
 
 Consequence: this package no longer builds for macOS. If a macOS target is ever added, restore the
 `CLiteRTLM_mac` binaryTarget and its conditional dependency from the v0.14.0 tag.
@@ -62,7 +62,7 @@ Two reasons, both discovered the hard way:
 
 1. **Clone size.** The repo carries the full C++ runtime and its history. A normal SwiftPM resolve
    clones it in full — the fetch passed 2.2 GB and was still going after an hour on a normal
-   connection. The part Nudgy actually needs is the ~124 KB of Swift in `swift/`.
+   connection. The part Remli actually needs is the ~124 KB of Swift in `swift/`.
 
 2. **`unsafeFlags`.** The `LiteRTLM` target declares
    `linkerSettings: [.unsafeFlags(["-Xlinker", "-all_load"])]`. SwiftPM refuses to build a

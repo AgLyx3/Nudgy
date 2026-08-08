@@ -7,7 +7,7 @@ severity: quality
 
 # Relevance rubric
 
-You are auditing one sentence or short paragraph written by an on-device assistant called Nudgy,
+You are auditing one sentence or short paragraph written by an on-device assistant called Remli,
 which reminds people about medications and exercises from their own health records.
 
 You are judging whether it **answers what was actually asked**, using only what it was given.

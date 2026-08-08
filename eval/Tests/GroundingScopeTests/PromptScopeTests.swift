@@ -1,5 +1,5 @@
 import XCTest
-@testable import NudgyCore
+@testable import RemliCore
 
 /// Grounding scope — can a prompt ever see a fact it was not supposed to?
 ///

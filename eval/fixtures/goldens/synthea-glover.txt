@@ -6,7 +6,7 @@ dietaryGuidance: 2
 allergies: 
 proposals: 13
 
-── nudgy.proposal.medication.MedicationRequest/d20a36fc-23ba-8462-1dbf-250c483fd915
+── remli.proposal.medication.MedicationRequest/d20a36fc-23ba-8462-1dbf-250c483fd915
    kind: medication
    title: labetalol hydrochloride 200 MG
    subtitle: Dr. Gabriel Reilly · Synthetic record
@@ -19,7 +19,7 @@ proposals: 13
    fact[Instruction]: "Take as needed."
    fact[Medication]: "labetalol hydrochloride 200 MG Oral Tablet"
 
-── nudgy.proposal.medication.MedicationRequest/d20a36fc-23ba-8462-5ff7-344069453d7f
+── remli.proposal.medication.MedicationRequest/d20a36fc-23ba-8462-5ff7-344069453d7f
    kind: medication
    title: Hydrochlorothiazide 25 MG
    subtitle: Dr. Kyoko Price · Synthetic record
@@ -27,11 +27,11 @@ proposals: 13
    provenance: fromYourRecord(MedicationRequest)
    tier: ready
    needsTimeOfDay: false   asNeeded: false
-   slot: Daily dose @ 09:00 [convenienceSuggestion(Nudgy's own default spacing for 1 reminder a day. Your record does not name a time of day. This is a scheduling idea, not health guidance.)] suggestion=9:00
+   slot: Daily dose @ 09:00 [convenienceSuggestion(Remli's own default spacing for 1 reminder a day. Your record does not name a time of day. This is a scheduling idea, not health guidance.)] suggestion=9:00
    fact[How often]: "once daily"
    fact[Medication]: "Hydrochlorothiazide 25 MG Oral Tablet"
 
-── nudgy.proposal.medication.MedicationRequest/d20a36fc-23ba-8462-ad0b-6db2506bf760
+── remli.proposal.medication.MedicationRequest/d20a36fc-23ba-8462-ad0b-6db2506bf760
    kind: medication
    title: prasugrel 10 MG
    subtitle: Dr. Gabriel Reilly · Synthetic record
@@ -43,7 +43,7 @@ proposals: 13
    flag(info): Not enough in your record to set a time
    fact[Medication]: "prasugrel 10 MG Oral Tablet"
 
-── nudgy.proposal.medication.MedicationRequest/d20a36fc-23ba-8462-b216-28cf7e4182d2
+── remli.proposal.medication.MedicationRequest/d20a36fc-23ba-8462-b216-28cf7e4182d2
    kind: medication
    title: lisinopril 10 MG
    subtitle: Dr. Kyoko Price · Synthetic record
@@ -56,7 +56,7 @@ proposals: 13
    fact[Instruction]: "Take as needed."
    fact[Medication]: "lisinopril 10 MG Oral Tablet"
 
-── nudgy.proposal.medication.MedicationRequest/d20a36fc-23ba-8462-c14f-d5c8de672d1c
+── remli.proposal.medication.MedicationRequest/d20a36fc-23ba-8462-c14f-d5c8de672d1c
    kind: medication
    title: Acetaminophen 300 MG / Hydrocodone Bitartrate 5 MG
    subtitle: Dr. Synthia Keebler · Synthetic record
@@ -64,17 +64,17 @@ proposals: 13
    provenance: fromYourRecord(MedicationRequest)
    tier: ready
    needsTimeOfDay: false   asNeeded: false
-   slot: Dose 1 of 4 @ 08:00 [convenienceSuggestion(Nudgy's own default spacing for 4 reminders a day. Your record does not name a time of day. This is a scheduling idea, not health guidance.)] suggestion=8:00
-   slot: Dose 2 of 4 @ 12:00 [convenienceSuggestion(Nudgy's own default spacing for 4 reminders a day. Your record does not name a time of day. This is a scheduling idea, not health guidance.)] suggestion=12:00
-   slot: Dose 3 of 4 @ 16:00 [convenienceSuggestion(Nudgy's own default spacing for 4 reminders a day. Your record does not name a time of day. This is a scheduling idea, not health guidance.)] suggestion=16:00
-   slot: Dose 4 of 4 @ 20:00 [convenienceSuggestion(Nudgy's own default spacing for 4 reminders a day. Your record does not name a time of day. This is a scheduling idea, not health guidance.)] suggestion=20:00
-   flag(info): Nudgy's suggested times cluster around 12:00 PM
-   flag(info): Nudgy's suggested times cluster around 8:00 AM
+   slot: Dose 1 of 4 @ 08:00 [convenienceSuggestion(Remli's own default spacing for 4 reminders a day. Your record does not name a time of day. This is a scheduling idea, not health guidance.)] suggestion=8:00
+   slot: Dose 2 of 4 @ 12:00 [convenienceSuggestion(Remli's own default spacing for 4 reminders a day. Your record does not name a time of day. This is a scheduling idea, not health guidance.)] suggestion=12:00
+   slot: Dose 3 of 4 @ 16:00 [convenienceSuggestion(Remli's own default spacing for 4 reminders a day. Your record does not name a time of day. This is a scheduling idea, not health guidance.)] suggestion=16:00
+   slot: Dose 4 of 4 @ 20:00 [convenienceSuggestion(Remli's own default spacing for 4 reminders a day. Your record does not name a time of day. This is a scheduling idea, not health guidance.)] suggestion=20:00
+   flag(info): Remli's suggested times cluster around 12:00 PM
+   flag(info): Remli's suggested times cluster around 8:00 AM
    fact[How often]: "four times daily"
    fact[Instruction]: "Every four to six hours (qualifier value)"
    fact[Medication]: "Acetaminophen 300 MG / Hydrocodone Bitartrate 5 MG Oral Tablet"
 
-── nudgy.proposal.medication.MedicationRequest/d20a36fc-23ba-8462-d52e-9f707c6403aa
+── remli.proposal.medication.MedicationRequest/d20a36fc-23ba-8462-d52e-9f707c6403aa
    kind: medication
    title: aspirin 81 MG
    subtitle: Dr. Gabriel Reilly · Synthetic record
@@ -86,7 +86,7 @@ proposals: 13
    flag(info): Not enough in your record to set a time
    fact[Medication]: "aspirin 81 MG Oral Tablet"
 
-── nudgy.proposal.medication.MedicationRequest/d20a36fc-23ba-8462-d58d-a4b5dc667395
+── remli.proposal.medication.MedicationRequest/d20a36fc-23ba-8462-d58d-a4b5dc667395
    kind: medication
    title: lovastatin 20 MG
    subtitle: Dr. Gabriel Reilly · Synthetic record
@@ -99,7 +99,7 @@ proposals: 13
    fact[Instruction]: "Take as needed."
    fact[Medication]: "lovastatin 20 MG Oral Tablet"
 
-── nudgy.proposal.nutrition.breakfast
+── remli.proposal.nutrition.breakfast
    kind: nutrition
    title: Breakfast — what your record says about food
    subtitle: Diabetic diet (finding)
@@ -107,13 +107,13 @@ proposals: 13
    provenance: fromYourRecord(CarePlan)
    tier: ready
    needsTimeOfDay: false   asNeeded: false
-   slot: Breakfast @ 08:00 [convenienceSuggestion(Nudgy's own default time for breakfast. Your record does not say when you eat.)] suggestion=8:00
-   flag(info): Nudgy's suggested times cluster around 8:00 AM
+   slot: Breakfast @ 08:00 [convenienceSuggestion(Remli's own default time for breakfast. Your record does not say when you eat.)] suggestion=8:00
+   flag(info): Remli's suggested times cluster around 8:00 AM
    flag(info): This is only what has been written down
    fact[Diet in your plan]: "Diabetic diet (finding)"
    fact[Diet in your plan]: "Dietary Approaches to Stop Hypertension diet (regime/therapy)"
 
-── nudgy.proposal.nutrition.dinner
+── remli.proposal.nutrition.dinner
    kind: nutrition
    title: Dinner — what your record says about food
    subtitle: Diabetic diet (finding)
@@ -121,12 +121,12 @@ proposals: 13
    provenance: fromYourRecord(CarePlan)
    tier: ready
    needsTimeOfDay: false   asNeeded: false
-   slot: Dinner @ 18:30 [convenienceSuggestion(Nudgy's own default time for dinner. Your record does not say when you eat.)] suggestion=18:30
+   slot: Dinner @ 18:30 [convenienceSuggestion(Remli's own default time for dinner. Your record does not say when you eat.)] suggestion=18:30
    flag(info): This is only what has been written down
    fact[Diet in your plan]: "Diabetic diet (finding)"
    fact[Diet in your plan]: "Dietary Approaches to Stop Hypertension diet (regime/therapy)"
 
-── nudgy.proposal.nutrition.lunch
+── remli.proposal.nutrition.lunch
    kind: nutrition
    title: Lunch — what your record says about food
    subtitle: Diabetic diet (finding)
@@ -134,13 +134,13 @@ proposals: 13
    provenance: fromYourRecord(CarePlan)
    tier: ready
    needsTimeOfDay: false   asNeeded: false
-   slot: Lunch @ 12:30 [convenienceSuggestion(Nudgy's own default time for lunch. Your record does not say when you eat.)] suggestion=12:30
-   flag(info): Nudgy's suggested times cluster around 12:00 PM
+   slot: Lunch @ 12:30 [convenienceSuggestion(Remli's own default time for lunch. Your record does not say when you eat.)] suggestion=12:30
+   flag(info): Remli's suggested times cluster around 12:00 PM
    flag(info): This is only what has been written down
    fact[Diet in your plan]: "Diabetic diet (finding)"
    fact[Diet in your plan]: "Dietary Approaches to Stop Hypertension diet (regime/therapy)"
 
-── nudgy.proposal.therapy.CarePlan/d20a36fc-23ba-8462-d823-d1164599d0dd#physical-therapy-procedure-regime-therapy
+── remli.proposal.therapy.CarePlan/d20a36fc-23ba-8462-d823-d1164599d0dd#physical-therapy-procedure-regime-therapy
    kind: therapy
    title: Physical therapy procedure (regime/therapy)
    subtitle: Therapy (regime/therapy) · Mount Auburn Hospital · Synthetic record
@@ -154,7 +154,7 @@ proposals: 13
    flag(info): Your record does not name any equipment
    fact[Exercise]: "Physical therapy procedure (regime/therapy)"
 
-── nudgy.proposal.therapy.CarePlan/d20a36fc-23ba-8462-f0a8-62e87195d863#prescribed-activity-exercise-education-procedure
+── remli.proposal.therapy.CarePlan/d20a36fc-23ba-8462-f0a8-62e87195d863#prescribed-activity-exercise-education-procedure
    kind: therapy
    title: Prescribed activity/exercise education (procedure)
    subtitle: Lifestyle education regarding hypertension (procedure) · Mount Auburn Hospital · Synthetic record
@@ -168,7 +168,7 @@ proposals: 13
    flag(info): Your record does not name any equipment
    fact[Exercise]: "Prescribed activity/exercise education (procedure)"
 
-── nudgy.proposal.therapy.CarePlan/d20a36fc-23ba-8462-f684-199048a4bb6d#exercise-therapy-regime-therapy
+── remli.proposal.therapy.CarePlan/d20a36fc-23ba-8462-f684-199048a4bb6d#exercise-therapy-regime-therapy
    kind: therapy
    title: Exercise therapy (regime/therapy)
    subtitle: Diabetes self management plan (record artifact) · Mount Auburn Hospital · Synthetic record

@@ -13,7 +13,7 @@ import Foundation
 enum AdherenceVaultFile {
     /// `OutcomeLedger`. Rolling ~60 days of scheduled-occurrence outcomes.
     static let outcomeLedger = "adherence-ledger"
-    /// `InterruptionHistory`. When Nudgy last spoke up, and about what.
+    /// `InterruptionHistory`. When Remli last spoke up, and about what.
     static let interruptionHistory = "adherence-interruptions"
 
     static let all: [String] = [outcomeLedger, interruptionHistory]
@@ -67,7 +67,7 @@ final class InMemoryAdherenceVault: AdherenceVaultPersisting {
 ///
 /// # What it is not
 ///
-/// It is **not an adherence log**. It records what Nudgy scheduled and what Nudgy heard. See
+/// It is **not an adherence log**. It records what Remli scheduled and what Remli heard. See
 /// `ReminderOutcome` for why those are not the same as what the person did. Nothing in this type
 /// may be exported, summarized, or shown as a percentage — an "82% adherence" number computed from
 /// `.noResponse` rows would be a fabricated clinical statistic.
@@ -450,7 +450,7 @@ final class OutcomeLedgerStore {
     }
 
     /// Loads the ledger. A decode failure leaves an empty ledger rather than taking the app down;
-    /// the worst case is that Nudgy forgets what it noticed, which is a recoverable kind of quiet.
+    /// the worst case is that Remli forgets what it noticed, which is a recoverable kind of quiet.
     func load() {
         do {
             if let stored = try vault.read(OutcomeLedger.self, from: fileName) {

@@ -1,8 +1,8 @@
-# Nudgy Design Doc
+# Remli Design Doc
 
 ## Summary
 
-Nudgy is a privacy-first, on-device healthcare assistant for mobile phones. It helps people turn fragmented patient-portal health data into calm, reviewable, proactive reminders for recurring care actions.
+Remli is a privacy-first, on-device healthcare assistant for mobile phones. It helps people turn fragmented patient-portal health data into calm, reviewable, proactive reminders for recurring care actions.
 
 The v1 product is not a diagnostic assistant. It focuses on reminders and summarization, especially for medication routines and physical therapy/home exercise tasks that people need to do repeatedly.
 
@@ -12,7 +12,7 @@ The assistant should feel like a private conversation with a careful health aide
 
 Patients often receive care across multiple systems, such as NYU Langone MyChart, Columbia MyChart, and Cornell/Weill Cornell MyChart. Important care instructions are scattered across medication lists, visit summaries, discharge notes, clinician messages, and appointment instructions.
 
-Nudgy helps by:
+Remli helps by:
 
 - Connecting to health portals where possible.
 - Collecting relevant health data into an encrypted local vault.
@@ -50,9 +50,9 @@ Excluded:
 ## Core User Flow
 
 1. User connects health sources, ideally through patient-authorized MyChart/Epic FHIR access.
-2. Nudgy imports supported data to an encrypted local health vault.
+2. Remli imports supported data to an encrypted local health vault.
 3. The on-device reminder engine identifies possible recurring care actions.
-4. Nudgy presents each proposed reminder conversationally.
+4. Remli presents each proposed reminder conversationally.
 5. Each proposal cites the source record.
 6. User approves, edits, or skips.
 7. Approved reminders become local phone notifications.
@@ -155,7 +155,7 @@ Source: medication label photo, processed on device
 Post-v1 behavior may add on-device OCR and extraction:
 
 1. OCR and extraction run on device.
-2. Nudgy drafts medication name, dose, and instructions.
+2. Remli drafts medication name, dose, and instructions.
 3. The source is cited as the medication label photo.
 4. The user must approve or edit before any reminder is created.
 
@@ -242,7 +242,7 @@ However, using Twilio means communication data leaves the device. Even if config
 For v1, avoid Twilio except perhaps for generic messages with no PHI, such as:
 
 ```text
-You have a reminder in Nudgy.
+You have a reminder in Remli.
 ```
 
 References:
@@ -418,7 +418,7 @@ the clock renders muted rather than sage. `SafetyGuard` permits Gemma to say "I'
 "Diabetic diet" and a "Dietary Approaches to Stop Hypertension diet", both cited care-plan entries,
 which the therapy parser skipped because they are not exercise.
 
-**The line held:** Nudgy restates, it does not compose. Nothing is inferred from a diagnosis —
+**The line held:** Remli restates, it does not compose. Nothing is inferred from a diagnosis —
 "diabetic" does not become "avoid sugar" — and hydration reminders are deliberately absent, because
 hydration is almost never in a chart and generating one would be inventing health advice. It
 remains available through user-created reminders, where the person is the source.
@@ -427,5 +427,5 @@ remains available through user-created reminders, where the person is the source
 
 **Specified:** an open question pending due diligence.
 
-**Decided:** not adopted. Its value is breadth; Nudgy's is trust. Full reasoning, and the one
+**Decided:** not adopted. Its value is breadth; Remli's is trust. Full reasoning, and the one
 condition that would reopen it, are in `ROADMAP.md`.

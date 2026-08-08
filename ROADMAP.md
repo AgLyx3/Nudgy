@@ -1,4 +1,4 @@
-# Nudgy Roadmap
+# Remli Roadmap
 
 Scope decisions for data acquisition. Companion to `DESIGN_DOC.md` and `ARCHITECTURE.md`.
 
@@ -35,7 +35,7 @@ egress path at all. The only network access in the entire app is the Gemma model
 **Status: planned, build if time allows. This is the intended real-data path.**
 
 Patient-authorized SMART on FHIR. The user authenticates with their own MyChart credentials
-through the provider's own authorization page; Nudgy never sees the password.
+through the provider's own authorization page; Remli never sees the password.
 
 ```
 User ──► MyChart authorization page (ASWebAuthenticationSession)
@@ -70,7 +70,7 @@ What remains to build:
    per-organization; NYU Langone, Columbia, and Weill Cornell each have their own base URL. Do not
    wildcard these in `EgressPolicy` — enumerate them.
 4. **`ASWebAuthenticationSession`** for the authorization leg, plus a registered redirect scheme.
-5. **Token storage** in the Keychain under a service **distinct** from `app.nudgy.Nudgy.vault`, with
+5. **Token storage** in the Keychain under a service **distinct** from `app.remli.Remli.vault`, with
    refresh handling for `offline_access`.
 6. **Pagination** — Epic returns `Bundle.link[rel=next]`; the demo bundles do not, so this is
    genuinely untested code today.
@@ -87,9 +87,9 @@ then a real MyChart account. The sandbox validates every step above without any 
 data-acquisition path. This section is kept as the record of why, and what would have to change if
 the question is ever reopened.
 
-The deciding argument: Tross's value is **breadth**, and Nudgy's value is **trust**. Paying for the
+The deciding argument: Tross's value is **breadth**, and Remli's value is **trust**. Paying for the
 former with the latter is a bad trade for this product. An aggregator makes sense for a company
-whose differentiator is coverage; Nudgy's differentiator is that the answer to "who else has seen
+whose differentiator is coverage; Remli's differentiator is that the answer to "who else has seen
 this?" is *nobody*. Introducing an intermediary to reach more portals would spend the single thing
 the product is actually selling.
 
@@ -164,7 +164,7 @@ requires a direct conversation and likely an NDA. It cannot be validated on a ha
 **Status: not built. Recorded because the evaluation was informative and the case will get stronger
 with real data.**
 
-Nudgy currently reconciles medications by their display string. The question was whether to switch
+Remli currently reconciles medications by their display string. The question was whether to switch
 to RxNorm codes, on the theory that real portals write the same drug differently. Measured against
 all 111 Synthea patients before building anything:
 
@@ -203,7 +203,7 @@ it:
 > Three of your medications list **acetaminophen** as an ingredient: Percocet, Tylenol, and the
 > hydrocodone tablet. Your pharmacist can tell you whether that is intended.
 
-What Nudgy must not say is anything about maximum daily doses or consequences. That is clinical,
+What Remli must not say is anything about maximum daily doses or consequences. That is clinical,
 and it needs the approved drug knowledge base `DESIGN_DOC.md` defers.
 
 ### When to build it

@@ -42,7 +42,7 @@ let package = Package(
       checksum: "dddac2f6713ed65eaf01c18e115d9fec22184adf575cc7856a21387e8ba937e1"
     ),
     // LOCAL CHANGE: upstream also declares a `CLiteRTLM_mac` binaryTarget here (44.6 MB) for the
-    // macOS slice. Nudgy is an iOS-only app, so it is removed — SwiftPM downloads every declared
+    // macOS slice. Remli is an iOS-only app, so it is removed — SwiftPM downloads every declared
     // binaryTarget at resolve time regardless of its platform condition, and on a slow connection
     // that is minutes spent on a framework nothing links against. Restore it from the v0.14.0 tag
     // if a macOS target is ever added. See ../README.md.

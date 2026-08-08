@@ -1,6 +1,6 @@
-# Nudgy v1 Architecture
+# Remli v1 Architecture
 
-Companion to `DESIGN_DOC.md`. That document defines *what* Nudgy is and what it must never do.
+Companion to `DESIGN_DOC.md`. That document defines *what* Remli is and what it must never do.
 This document defines *how* the app is built so those rules are structurally enforced rather
 than merely intended.
 
@@ -16,7 +16,7 @@ pair of rules:
 > Every reminder proposal must cite its source.
 > If medication timing or food instructions are absent, the assistant should not invent clinical advice.
 
-A language model cannot be trusted to honor those rules by instruction alone. So Nudgy does not
+A language model cannot be trusted to honor those rules by instruction alone. So Remli does not
 ask it to. The architecture splits the system in two:
 
 ```
@@ -64,7 +64,7 @@ This is also the answer to "what happens when the model hallucinates on stage."
 │ Features/            SwiftUI. Conversation timeline, review  │
 │                      cards, settings, photo affordance.      │
 ├──────────────────────────────────────────────────────────────┤
-│ Language/            NudgyLanguageModel protocol             │
+│ Language/            RemliLanguageModel protocol             │
 │                      ├─ LiteRTGemmaModel   (device, real)    │
 │                      └─ ScriptedModel      (fallback)        │
 │                      GroundedPromptBuilder, SafetyGuard,     │
@@ -108,7 +108,7 @@ enum Provenance {
     case fromYourRecord(SourceCitation)   // verbatim chart text
     case patternNoticed(basis: String)    // routine/calendar inference
     case needsReview(reason: ReviewReason)// user must confirm
-    case convenienceSuggestion            // Nudgy's idea, explicitly not clinical
+    case convenienceSuggestion            // Remli's idea, explicitly not clinical
 }
 ```
 
@@ -146,7 +146,7 @@ What it does:
   could lose nuance. "with meals" stays "with meals."
 - **Conflict detection**, not resolution. Two sources disagreeing on a food instruction produces
   a `PossibleConcern` flag that shows both sources side by side and recommends asking the care
-  team. Nudgy states the discrepancy; it does not adjudicate it.
+  team. Remli states the discrepancy; it does not adjudicate it.
 - **Clustering** of reminders within a window produces a notification-management offer (bundle,
   stagger, or leave alone) — a UX decision, explicitly not a clinical one.
 
@@ -194,7 +194,7 @@ backend.
 
 **Why E2B over E4B:** E4B needs ~3.4 GB peak on the GPU backend, which is uncomfortably close
 to the per-app memory ceiling on non-Pro iPhones. E2B leaves headroom for the vault, the speech
-stack, and SwiftUI. Nudgy's model does narration, not reasoning, so E2B is sufficient.
+stack, and SwiftUI. Remli's model does narration, not reasoning, so E2B is sufficient.
 
 **Model delivery:** the file is far too large to bundle. `GemmaModelManager` resolves it in
 order: (1) a file already staged in Application Support, (2) a file dropped into the app
@@ -204,7 +204,7 @@ progress UI. Stored with `.completeFileProtection` and excluded from iCloud back
 **Known constraint — the simulator cannot run inference.** LiteRT-LM fails in the iOS Simulator:
 the CPU/XNNPACK path throws `INTERNAL` on first generation and the GPU path fails to create an
 engine ([LiteRT-LM #2504](https://github.com/google-ai-edge/LiteRT-LM/issues/2504)). A physical
-iPhone is required for real Gemma. `NudgyLanguageModel` therefore has two implementations, chosen
+iPhone is required for real Gemma. `RemliLanguageModel` therefore has two implementations, chosen
 at runtime; the simulator gets `ScriptedModel` and the UI shows an honest "scripted narration"
 badge rather than pretending. All non-model layers are fully exercised either way.
 
@@ -220,9 +220,9 @@ the specific proposal under discussion.
 2. Reject any **dose or quantity** not present in the grounding context — the highest-consequence
    hallucination class. Strict under every framing: "I can remind you to take 850 mg" is refused.
 3. Reject diagnosis and triage language.
-4. **Clock times are judged on attribution, not vocabulary.** Nudgy is expected to choose when a
+4. **Clock times are judged on attribution, not vocabulary.** Remli is expected to choose when a
    reminder fires, so a sentence framed as its own choice passes and one credited to the record
-   does not. `attributesToRecord()` outranks `isNudgyOffer()`, because a sentence can wear both
+   does not. `attributesToRecord()` outranks `isRemliOffer()`, because a sentence can wear both
    hats — *"I'll remind you at 7:30, which is when your chart says to take it"* opens as an offer
    and closes as a fabricated prescription.
 

@@ -1,6 +1,6 @@
 import XCTest
 import EvalKit
-@testable import NudgyCore
+@testable import RemliCore
 
 /// Family 2 — does the streaming tripwire stay in step with the authoritative guard?
 ///

@@ -13,7 +13,7 @@ enum SignalStrength: Int, Codable, Hashable, Comparable, Sendable {
     case ambiguous = 1
     /// The user physically interacted with the reminder, but told us nothing about the dose itself.
     case interaction = 2
-    /// The user told us in words. The only kind of evidence Nudgy may ever restate as a fact.
+    /// The user told us in words. The only kind of evidence Remli may ever restate as a fact.
     case told = 3
 
     static func < (lhs: SignalStrength, rhs: SignalStrength) -> Bool { lhs.rawValue < rhs.rawValue }
@@ -47,8 +47,8 @@ enum SignalStrength: Int, Codable, Hashable, Comparable, Sendable {
 ///
 /// 1. `.noResponse` must never be rendered, narrated, summarized, or exported as "missed",
 ///    "skipped", "non-adherent", or any synonym.
-/// 2. Anything Nudgy says about a run of `.noResponse` must be phrased as a statement about
-///    *Nudgy's own experience* — "I haven't heard back about this four times this week" — never as
+/// 2. Anything Remli says about a run of `.noResponse` must be phrased as a statement about
+///    *Remli's own experience* — "I haven't heard back about this four times this week" — never as
 ///    a statement about the person's body or behaviour.
 /// 3. It may open a question. It may never support a conclusion.
 ///
@@ -76,7 +76,7 @@ enum ReminderOutcome: Codable, Hashable, Sendable {
     /// True when the user put this fact into the record themselves.
     ///
     /// Gate every sentence that describes what the *person* did behind this. Everything else is a
-    /// sentence about what *Nudgy* did.
+    /// sentence about what *Remli* did.
     var isToldByUser: Bool { signalStrength == .told }
 
     /// When we last heard anything at all about this occurrence.
@@ -173,12 +173,12 @@ struct ReminderOccurrence: Codable, Hashable, Identifiable, Sendable {
 /// is a no-op today and a one-line translation if either side ever renames.
 enum ReminderActionIdentifier {
     /// `NotificationScheduler.markDoneActionIdentifier`.
-    static let markDone = "nudgy.action.markDone"
+    static let markDone = "remli.action.markDone"
     /// `NotificationScheduler.snoozeActionIdentifier`.
-    static let snooze = "nudgy.action.snooze15"
+    static let snooze = "remli.action.snooze15"
     /// The user said, in the app, that this one slipped. There is no notification button for this —
     /// telling us a dose was missed is a deliberate, in-app, unhurried act, never a lock-screen tap.
-    static let saidItSlipped = "nudgy.action.saidItSlipped"
+    static let saidItSlipped = "remli.action.saidItSlipped"
 
     /// How far `snooze` defers by. Mirrors `NotificationScheduler.snoozeInterval`.
     static let snoozeInterval: TimeInterval = 15 * 60

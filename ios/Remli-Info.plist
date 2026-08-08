@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Partial Info.plist, merged with the keys Xcode generates from the INFOPLIST_KEY_* build settings
+  (GENERATE_INFOPLIST_FILE stays YES). It holds only the keys Xcode has no build setting for.
+
+  Deliberately kept OUTSIDE Remli/, which is a fileSystemSynchronizedGroup — a plist in there would
+  also be picked up as a bundle resource.
+
+  UIFileSharingEnabled is what makes the app's Documents directory visible in Finder (iPhone ▸ Files)
+  and in the iOS Files app. That is the demo path for Gemma's 2.4 GB of weights: drop the
+  .litertlm file straight into Documents and GemmaModelManager promotes it into Application Support
+  on next launch, instead of downloading it over conference wifi. See GemmaModelManager.swift,
+  `developerDropURL`.
+
+  Note this makes Documents user-visible. Nothing sensitive lives there: the encrypted vault is in
+  Application Support, and the weights are promoted out of Documents on the next launch.
+-->
+<plist version="1.0">
+<dict>
+	<key>UIFileSharingEnabled</key>
+	<true/>
+</dict>
+</plist>

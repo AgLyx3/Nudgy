@@ -1,4 +1,4 @@
-# Nudgy evaluation suite
+# Remli evaluation suite
 
 The folder to point at. Two halves:
 
@@ -24,12 +24,12 @@ Machine-readable output lands in `reports/` (gitignored).
 
 ## No copies of app code
 
-`Sources/NudgyCore` is a **symlink** to `../ios/Nudgy/Core`. The evals compile the exact sources the
+`Sources/RemliCore` is a **symlink** to `../ios/Remli/Core`. The evals compile the exact sources the
 app ships. A drifted copy of `SafetyGuard` that passes its own tests would be worse than no tests.
 
 `Package.swift` excludes only genuinely platform-bound files — `Notifications` (UserNotifications +
 UIKit), `Speech` (AVAudioSession is unavailable on macOS), and `LanguageModelProvider` (UIKit).
-Everything that matters here is Foundation-only because Nudgy's clinical core was built that way on
+Everything that matters here is Foundation-only because Remli's clinical core was built that way on
 purpose. **If a new file under `Core` starts importing UIKit, this build breaks** — that breakage is
 the signal that something left the portable core, so read it before adding an exclusion.
 
@@ -121,7 +121,7 @@ hold for *any* input, not just these files:
 Regenerate after an intentional change, then **read the diff**:
 
 ```sh
-NUDGY_EVAL_UPDATE_GOLDENS=1 swift test --filter NormalizerEvalTests
+REMLI_EVAL_UPDATE_GOLDENS=1 swift test --filter NormalizerEvalTests
 ```
 
 The renderer deliberately avoids `formattedTime`, which goes through `DateFormatter` and is
@@ -133,7 +133,7 @@ locale-dependent — a golden built from it fails on a machine set to a 24-hour 
 `"Take as needed."` as generic dosage text, so lisinopril, lovastatin and labetalol all come out
 `asNeededMedication` / tier `onDemand`. Those are standing daily medications.
 
-This is arguably Nudgy behaving *correctly*: the record literally says "take as needed", and inferring
+This is arguably Remli behaving *correctly*: the record literally says "take as needed", and inferring
 otherwise would need clinical knowledge the app explicitly refuses to have. It also degrades safely —
 `onDemand` means no alarm. But two consequences are worth deciding about deliberately:
 
@@ -153,8 +153,8 @@ The goldens show slots with `timeOfDay` **already set** *and* a `suggestion` pre
 comes out `.ready`, which `ActivationTier` documents as "schedule it, tell the user, let them change
 it later."
 
-So a time Nudgy invented is treated as ready to schedule without anyone accepting it. The provenance
-badge is honest, and `SafetyGuard`'s own comment says "Nudgy is expected to choose reminder times" —
+So a time Remli invented is treated as ready to schedule without anyone accepting it. The provenance
+badge is honest, and `SafetyGuard`'s own comment says "Remli is expected to choose reminder times" —
 so this may be intended and the doc comment merely stale. But the two statements cannot both be true,
 and which one is right changes whether 8 of 21 proposals should be auto-activating. Worth a decision
 rather than a guess; I have not changed either.
@@ -278,7 +278,7 @@ phrasing the guard punishes, and the resulting `SafetyEvent` reads
 `record` and `says` with a bounded gap, or add the `" record from"` / `" record, "` forms.
 
 **Finding B — `isSchedulingDuration` phrase gap.** It only applies inside a sentence
-`isNudgyOffer` recognises, and that list has `" i will remind"` but not `" i will come back"`. So
+`isRemliOffer` recognises, and that list has `" i will remind"` but not `" i will come back"`. So
 "I will come back to you in 15 minutes" reads the 15-minute snooze interval as an ungrounded clinical
 number. "I will remind you again in 15 minutes", "I can check back in 15 minutes" and "I have set a
 follow-up for 15 minutes from now" all pass, so this is phrase-list coverage rather than a structural

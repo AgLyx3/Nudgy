@@ -92,7 +92,7 @@ public enum FixtureError: Error, CustomStringConvertible {
     public var description: String {
         switch self {
         case .directoryNotFound(let path):
-            return "Fixture directory not found at \(path). Set NUDGY_EVAL_FIXTURES to override."
+            return "Fixture directory not found at \(path). Set REMLI_EVAL_FIXTURES to override."
         case .fileNotFound(let path):
             return "Fixture file not found: \(path)"
         case .duplicateCaseIDs(let ids):
@@ -109,7 +109,7 @@ public enum Fixtures {
     /// arbitrary sibling directories, and because deriving it from source location means the evals
     /// work identically under `swift test`, Xcode, and CI with no resource copying step.
     public static var root: URL {
-        if let override = ProcessInfo.processInfo.environment["NUDGY_EVAL_FIXTURES"] {
+        if let override = ProcessInfo.processInfo.environment["REMLI_EVAL_FIXTURES"] {
             return URL(fileURLWithPath: override, isDirectory: true)
         }
         // .../eval/Sources/EvalKit/NarrationCorpus.swift → .../eval
@@ -122,7 +122,7 @@ public enum Fixtures {
 
     /// Where test runs write their machine-readable summaries.
     public static var reportsDirectory: URL {
-        if let override = ProcessInfo.processInfo.environment["NUDGY_EVAL_REPORTS"] {
+        if let override = ProcessInfo.processInfo.environment["REMLI_EVAL_REPORTS"] {
             return URL(fileURLWithPath: override, isDirectory: true)
         }
         return root.deletingLastPathComponent().appendingPathComponent("reports", isDirectory: true)

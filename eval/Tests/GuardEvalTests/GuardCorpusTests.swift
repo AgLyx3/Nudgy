@@ -1,6 +1,6 @@
 import XCTest
 import EvalKit
-@testable import NudgyCore
+@testable import RemliCore
 
 /// Family 1 — does `SafetyGuard.review` reject what it must, and allow what it must?
 ///

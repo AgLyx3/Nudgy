@@ -1,4 +1,4 @@
-# Nudgy
+# Remli
 
 A privacy-first, on-device health assistant for iOS. It turns fragmented patient-portal records
 into calm, source-cited reminders for medications, physical therapy, and diet.
@@ -17,7 +17,7 @@ this pair of rules:
 > Every reminder proposal must cite its source.
 > If medication timing or food instructions are absent, the assistant should not invent clinical advice.
 
-A language model cannot be trusted to honor those by instruction alone, so Nudgy does not ask it to:
+A language model cannot be trusted to honor those by instruction alone, so Remli does not ask it to:
 
 ```
         ┌──────────────────────────────────────┐
@@ -78,7 +78,7 @@ Three actions, not five: past three or four, people stop reading them.
   <img src="docs/screenshots/lock-screen.png" width="290" alt="The same reminder on a locked phone, naming nothing">
 </p>
 
-The same reminder, locked: **"Nudgy — It's time for one of your reminders. Tap to see it."** No
+The same reminder, locked: **"Remli — It's time for one of your reminders. Tap to see it."** No
 medication, no clinic, not even the category.
 
 A medication name implies a condition, and a lock screen is readable by anyone nearby, several
@@ -113,7 +113,7 @@ Running on a physical iPhone 15 with Gemma 4 E2B on the GPU backend.
 ## Running it
 
 ```sh
-open ios/Nudgy.xcodeproj
+open ios/Remli.xcodeproj
 ```
 
 iOS 17+, Xcode 16+.
@@ -138,8 +138,8 @@ downloads. To side-load it rather than wait on Wi-Fi:
 
 ```sh
 xcrun devicectl device copy to --device <UDID> \
-  --domain-type appDataContainer --domain-identifier app.nudgy.Nudgy \
-  --source ~/NudgyModels/gemma-4-E2B-it.litertlm \
+  --domain-type appDataContainer --domain-identifier app.remli.Remli \
+  --source ~/RemliModels/gemma-4-E2B-it.litertlm \
   --destination Documents/gemma-4-E2B-it.litertlm
 ```
 
@@ -179,7 +179,7 @@ Two Foundation-only harnesses compile the core outside the app and run it agains
   schedule, missing time-of-day is never invented, and a cross-source conflict cites both
   organizations without picking a winner.
 - **SafetyGuard** — 29 adversarial cases. Rejects the design doc's own unsafe example, invented
-  doses, times credited to the chart, and diagnosis language; accepts Nudgy proposing a time as its
+  doses, times credited to the chart, and diagnosis language; accepts Remli proposing a time as its
   own idea.
 
 The distinction SafetyGuard enforces is **attribution, not vocabulary**:
@@ -202,7 +202,7 @@ Scope decisions made during the build:
 
 - **Voice input cut** — outside the core loop, most failure modes in the app. Preserved in
   `ios/Deferred/`; spoken read-back kept.
-- **Tross declined** (`ROADMAP.md`) — its value is breadth, Nudgy's is trust.
+- **Tross declined** (`ROADMAP.md`) — its value is breadth, Remli's is trust.
 - **Hydration reminders** — almost never in a chart, so generating one would be inventing advice.
   Available as a user-created reminder, where the person is the source.
 - **`silence` check-ins** — built, off behind a flag. Weakest evidence, most consequential wording.
@@ -233,10 +233,10 @@ rule identifiers, never prompts or record content — separated all four in one 
 ## Layout
 
 ```
-DESIGN_DOC.md            product spec (source of truth for what Nudgy may say)
+DESIGN_DOC.md            product spec (source of truth for what Remli may say)
 ARCHITECTURE.md          how the safety properties are structurally enforced
 ROADMAP.md               data acquisition: V1, V2 MyChart, Tross decision
-ios/Nudgy/
+ios/Remli/
   Core/Models/           domain types; provenance is a type, not a convention
   Core/FHIR/             R4 decoding + HealthSourceConnector seam
   Core/Normalize/        FHIR → domain, capturing citations

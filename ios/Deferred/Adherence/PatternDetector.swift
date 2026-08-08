@@ -35,7 +35,7 @@ struct PatternDetector {
         /// **`silence` ships OFF.**
         ///
         /// The detection logic is finished and correct; the *wording* is what is not cleared. A
-        /// silence check-in is the one place in this app where Nudgy speaks about a run of missing
+        /// silence check-in is the one place in this app where Remli speaks about a run of missing
         /// evidence, and there is no phrasing of that which cannot be misread as an accusation by
         /// somebody having a bad month. `.noResponse` is indistinguishable from a phone in a pocket
         /// (see `ReminderOutcome`), so being wrong here is not a rare edge case — it is expected.
@@ -219,7 +219,7 @@ struct PatternDetector {
                 let suggested = suggestedTime(forSlotMinutes: slotMinutes, delay: medianDelay)
                 let roundedMinutes = Int((min(medianDelay, options.timeFitMaximumSuggestedDelay) / 60).rounded())
 
-                let basis = "Nudgy sent this reminder at \(AdherenceClock.string(from: slotTime)) and it was "
+                let basis = "Remli sent this reminder at \(AdherenceClock.string(from: slotTime)) and it was "
                     + "pushed back \(deferralEvents) time\(deferralEvents == 1 ? "" : "s") "
                     + "on \(days.count) different day\(days.count == 1 ? "" : "s") "
                     + "in the last \(options.timeFitWindowDays) days, by about \(roundedMinutes) minutes each time. "
@@ -309,13 +309,13 @@ struct PatternDetector {
             let silent = unheard.filter(\.outcome.isSilent).count
             let toldSlipped = unheard.count - silent
 
-            var basis = "Nudgy sent this reminder \(occurrences.count) time"
+            var basis = "Remli sent this reminder \(occurrences.count) time"
                 + "\(occurrences.count == 1 ? "" : "s") in the last \(options.silenceWindowDays) days. "
                 + "\(silent) of those were never confirmed either way"
             if toldSlipped > 0 {
-                basis += ", and you told Nudgy \(toldSlipped) had slipped"
+                basis += ", and you told Remli \(toldSlipped) had slipped"
             }
-            basis += ". Nudgy has no way to know whether anything was taken — this records only what "
+            basis += ". Remli has no way to know whether anything was taken — this records only what "
                 + "the app sent and what it heard."
 
             return NoticedPattern(
@@ -336,7 +336,7 @@ struct PatternDetector {
     /// This is a notification-management observation, and its question is a notification-management
     /// question: shall I combine these? The architecture doc already treats clustering as a UX
     /// decision explicitly separated from clinical ones, and nothing here departs from that — no
-    /// medication is named, nothing is reordered, and the only thing Nudgy offers to change is how
+    /// medication is named, nothing is reordered, and the only thing Remli offers to change is how
     /// many times the phone buzzes.
     ///
     /// Blocks are built greedily over the *scheduled* times, so the grouping is stable regardless
@@ -403,7 +403,7 @@ struct PatternDetector {
                 + "\(options.clusterSpanMinutes) minutes of each other around "
                 + "\(AdherenceClock.string(from: AdherenceClock.components(fromMinutesOfDay: start))). "
                 + "Over the last \(options.clusterWindowDays) days, \(unanswered) of \(total) of them "
-                + "did not come back to Nudgy as done. This is about how many notifications arrive at "
+                + "did not come back to Remli as done. This is about how many notifications arrive at "
                 + "once, not about what was or was not taken."
 
             patterns.append(

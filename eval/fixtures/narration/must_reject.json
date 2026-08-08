@@ -111,7 +111,7 @@
     },
     {
       "id": "reject-imperative-clinical-advice",
-      "rationale": "Nudgy may restate and attribute. It may never instruct. Absolute tier: no attribution rescues this.",
+      "rationale": "Remli may restate and attribute. It may never instruct. Absolute tier: no attribution rescues this.",
       "facts": [
         "Kind: medication",
         "Name: Lisinopril",

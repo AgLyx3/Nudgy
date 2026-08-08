@@ -28,6 +28,6 @@ Package.resolved
 Models/weights/
 
 # Never commit real health data. The only patient data in this repo is synthetic
-# (MITRE Synthea) or hand-authored demo data, both under ios/Nudgy/Resources/SampleData/.
+# (MITRE Synthea) or hand-authored demo data, both under ios/Remli/Resources/SampleData/.
 *.phi.json
 /PrivateData/

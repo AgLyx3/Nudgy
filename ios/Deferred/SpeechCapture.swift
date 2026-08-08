@@ -26,21 +26,21 @@ enum SpeechCaptureError: Error, LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .localeUnsupported(let identifier):
-            return "Nudgy can't transcribe \(identifier) speech on this phone. You can still type."
+            return "Remli can't transcribe \(identifier) speech on this phone. You can still type."
         case .onDeviceRecognitionUnsupported(let identifier):
             return """
             Voice input is off for \(identifier). This phone can only transcribe that language by \
-            sending your voice to Apple's servers, and Nudgy won't send health conversations off \
+            sending your voice to Apple's servers, and Remli won't send health conversations off \
             this device. You can still type, and everything else works normally.
             """
         case .speechAuthorizationDenied:
             return """
-            Speech recognition is turned off for Nudgy. You can turn it on in Settings › Nudgy, or \
+            Speech recognition is turned off for Remli. You can turn it on in Settings › Remli, or \
             keep using text.
             """
         case .microphoneDenied:
             return """
-            Microphone access is turned off for Nudgy. You can turn it on in Settings › Nudgy, or \
+            Microphone access is turned off for Remli. You can turn it on in Settings › Remli, or \
             keep using text.
             """
         case .recognizerTemporarilyUnavailable:
@@ -70,7 +70,7 @@ enum SpeechCaptureError: Error, LocalizedError, Equatable {
 /// is disabled rather than downgraded.**
 ///
 /// `SFSpeechRecognizer` will happily stream audio to Apple's servers. That is a reasonable default
-/// for a notes app and a product-ending default for this one: the sentences spoken into Nudgy are
+/// for a notes app and a product-ending default for this one: the sentences spoken into Remli are
 /// "my knee still hurts after the Tuesday exercises" and "I skipped the metformin again". Sending
 /// those anywhere contradicts the single promise the product makes, and it would do so invisibly —
 /// the transcript comes back looking exactly the same either way. That is what makes a silent
@@ -150,7 +150,7 @@ final class SpeechCapture: NSObject, ObservableObject {
 
     // MARK: - Permissions and availability
 
-    /// Requests both permissions Nudgy needs, then evaluates whether on-device dictation is possible.
+    /// Requests both permissions Remli needs, then evaluates whether on-device dictation is possible.
     ///
     /// Speech recognition and the microphone are two separate grants with two separate Info.plist
     /// strings; granting one and denying the other is a normal state, so both are asked for and both
