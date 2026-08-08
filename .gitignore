@@ -31,3 +31,6 @@ Models/weights/
 # (MITRE Synthea) or hand-authored demo data, both under ios/Remli/Resources/SampleData/.
 *.phi.json
 /PrivateData/
+
+# Agent scaffolding and worktrees — local only.
+.claude/
